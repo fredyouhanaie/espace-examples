@@ -15,13 +15,17 @@ techniques for developing `espace' based applications.
 
 ### pubsub_0
 
+The `demo_1/0` function will automatically step through the manual
+steps listed below.
+
 * from the pubsub directory, start the shell
+
 ```
 $ rebar3 shell
 ```
 
 * Initialize the demo, which should generate messages from the three
-  clients`alpha`, `beta` and `gamma`:
+  subscribers `alpha`, `beta` and `gamma`:
 
 ```
 > pubsub_0:demo().
@@ -34,17 +38,21 @@ $ rebar3 shell
 > pubsub_0:publish("Hello, World, again!").
 ```
 
-* Start a fourth client, which should report the last message published:
+* Start a fourth subscriber, which should report the last message
+  published:
+
 ```
 > pubsub_0:client(delta).
 ```
 
-* One more message for all four clients:
+* One more message for all four subscribers:
+
 ```
 > pubsub_0:publish("Safety in numbers :-)").
 ```
 
 * Once we stop the application, all data and workers will disappear:
+
 ```
 > pubsub_0:stop().
 ```

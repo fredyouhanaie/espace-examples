@@ -24,9 +24,9 @@
 %%%
 %%% `demo/0' can be used to kick everything off. This can be followed
 %%% by a series of `publish/1' calls. With every `publish/1' call
-%%% there should be a log message from each of the clients.
+%%% there should be a log message from each of the subscribers.
 %%%
-%%% Further clients can be initiated with the `client/1' function.
+%%% Further subscribers can be initiated with the `client/1' function.
 %%%
 %%% @end
 %%% Created :  6 Mar 2019 by Fred Youhanaie <fyrlang@anydata.co.uk>
@@ -36,7 +36,7 @@
 %% API exports
 -export([start/0, stop/0]).
 -export([publish/1, obtain_curr/0, obtain_next/0]).
--export([demo/0, demo/1, client/1, client_init/1]).
+-export([demo/0, demo/1, demo_1/0, client/1, client_init/1]).
 
 %%====================================================================
 %% API functions
@@ -111,9 +111,9 @@ obtain_next()->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Start the demo with three clients.
+%% Start the demo with three subscribers.
 %%
-%% The clients are named `alpha', `beta' and `gamma'.
+%% The subscribers are named `alpha', `beta' and `gamma'.
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -123,9 +123,9 @@ demo() ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Initialize and start a set of clients.
+%% Initialize and start a set of subscribers.
 %%
-%% The clients are identified by the list of names supplied as
+%% The subscribers are identified by the list of names supplied as
 %% argument.
 %%
 %% @end
@@ -137,13 +137,46 @@ demo(Names) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Start a pubsub client worker.
+%% Run end to end demo.
 %%
-%% The client, which will run in the background, will wait for new
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec demo_1() -> ok.
+demo_1() ->
+    logger:notice("======= Starting demo_1"),
+    demo(),
+    timer:sleep(1000),
+
+    logger:notice("======= First message"),
+    publish("Hello, World!"),
+    timer:sleep(1000),
+
+    logger:notice("======= Second message"),
+    publish("Hello, World, again!"),
+    timer:sleep(1000),
+
+    logger:notice("======= Adding another subscriber"),
+    pubsub_0:client(delta),
+    timer:sleep(1000),
+
+    logger:notice("======= One last message"),
+    pubsub_0:publish("Safety in numbers :-)"),
+    timer:sleep(1000),
+
+    logger:notice("======= End of demo, bye!"),
+    pubsub_0:stop().
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Start a pubsub subscriber worker.
+%%
+%% The subscriber, which will run in the background, will wait for new
 %% data, then send them to the logger. The log entries for a
-%% particular client are identified by the supplied `Name'.
+%% particular subscriber are identified by the supplied `Name'.
 %%
-%% This is the best way to start a new client from the shell.
+%% This is the best way to start a new subscriber from the shell,
+%% since it will not block the shell.
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -151,16 +184,15 @@ demo(Names) ->
 client(Name) ->
     espace:worker({?MODULE, client_init, [Name]}).
 
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Start a new client.
+%% Start a new subscriber.
 %%
-%% On start up the latest published data is logged. There after the
+%% On start up the latest published data is logged. Thereafter, the
 %% process will wait (forever) for the next data item to be published.
 %%
 %% If called from the shell, the shell will become inaccessible to the
