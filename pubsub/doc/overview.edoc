@@ -1,0 +1,20 @@
+%% -*- mode:html -*-
+
+@author Fred Youhanaie <fyrlang@anydata.co.uk>
+@copyright 2019 Fred Youhanaie
+@version 0.1.0
+
+@doc
+
+<p>These are a series of example modules to demonstrate use of
+`espace' as a platform for publisher/subscriber services.</p>
+
+<p>Each module implements the same functionality, however, the modules
+with higher suffix number have more features.
+</p>
+
+<p>The intention here is to demonstrate, and experiment with, various
+techniques for developing `espace' based applications.
+</p>
+
+@end
