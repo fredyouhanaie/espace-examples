@@ -11,6 +11,16 @@ with higher suffix number have more features.
 The intention here is to demonstrate, and experiment with, various
 techniques for developing `espace' based applications.
 
+## Build
+
+`rebar3` is used for compilation and testing.
+
+```
+rebar3 compile
+rebar3 dialyzer
+rebar3 edoc
+```
+
 ## Trying out the demo
 
 ### pubsub_0
@@ -56,6 +66,11 @@ $ rebar3 shell
 ```
 > pubsub_0:stop().
 ```
+
+## pubsub_1
+
+This is a slightly more sophisticated version of `pubsub_0`. Use
+`pubsub_1:demo_1/0` to run the demo.
 
 Enjoy!
 
