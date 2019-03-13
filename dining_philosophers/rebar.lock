@@ -1,0 +1,4 @@
+[{<<"espace">>,
+  {git,"https://github.com/fredyouhanaie/espace",
+       {ref,"f040cdf527772021760a6fcfe9a4c9ee33b14cff"}},
+  0}].
