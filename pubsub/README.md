@@ -25,47 +25,28 @@ rebar3 edoc
 
 ### pubsub_0
 
-The `demo_1/0` function will automatically step through the manual
+The `demo_0:start/0` function will run a demonstration of `pubsub_0`
 steps listed below.
 
 * from the pubsub directory, start the shell
 
 ```
 $ rebar3 shell
+> demo_0:start().
 ```
 
-* Initialize the demo, which should generate messages from the three
-  subscribers `alpha`, `beta` and `gamma`:
+The demo will generate `logger` messages when running. The following
+events will take place at one second intervals:
 
-```
-> pubsub_0:demo().
-```
-
-* Publish a couple of messages:
-
-```
-> pubsub_0:publish("Hello, World!").
-> pubsub_0:publish("Hello, World, again!").
-```
-
-* Start a fourth subscriber, which should report the last message
-  published:
-
-```
-> pubsub_0:client(delta).
-```
-
-* One more message for all four subscribers:
-
-```
-> pubsub_0:publish("Safety in numbers :-)").
-```
-
-* Once we stop the application, all data and workers will disappear:
-
-```
-> pubsub_0:stop().
-```
+* The `pubsub` service will be started and initialized with three
+  subscribers, `alpha`, `beta` and `gamma`.
+* Two messages will be published. We expect the two messages to be
+  reported by all three subscribers.
+* Another subscriber, `delta`, will be added to the group. The last
+  message will be reported by `delta`.
+* One last message will be published. All four subscribers will report
+  the message.
+* The service will be stopped.
 
 ## pubsub_1
 
