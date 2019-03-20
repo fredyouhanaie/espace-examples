@@ -36,7 +36,7 @@ init(N) when N > 0 ->
     lists:foreach(fun (I) -> espace:out({chopstick, I}) end, Philosophers),
     lists:foreach(fun (I) -> espace:worker({?MODULE, phil, [I]}) end, Philosophers),
 
-    Room_tickets = lists:seq(1, N-2),
+    Room_tickets = lists:seq(1, N-1),
     lists:foreach(fun (_I) -> espace:out({room_ticket}) end, Room_tickets),
 
     espace:out({num, N}).

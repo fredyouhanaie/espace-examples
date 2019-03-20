@@ -22,8 +22,15 @@ The tuple space is initialized as follows:
 
 * `N` chopstick tuples, `{chopstick, I}`.
 
-For each phisopher a worker process, `phil(I)` is started.
+For each philosopher a worker process, `phil(I)` is started.
 
+rebar3
+-----
+
+Use `rebar3` to build and run the demo.
+
+Please note that `rebar3` will automatically download, and cache, the
+espace source code from github.
 
 To try the example
 -----
