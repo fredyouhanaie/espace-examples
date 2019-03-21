@@ -99,7 +99,7 @@ eat(I, Num) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec state(integer(), integer(), char()) -> ok.
+-spec state(integer(), integer(), char()) -> string().
 state(I, N, S) ->
     lists:duplicate(I, $.) ++ [S] ++ lists:duplicate(N-I-1, $.).
     
