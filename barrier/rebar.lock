@@ -1,0 +1,8 @@
+{"1.2.0",
+[{<<"espace">>,{pkg,<<"espace">>,<<"0.6.0">>},0}]}.
+[
+{pkg_hash,[
+ {<<"espace">>, <<"489BE39B125029CCC4CAE14DB7F38A961497B45191D3774814B47CAB42E1F377">>}]},
+{pkg_hash_ext,[
+ {<<"espace">>, <<"6DAC7F5B2C5932A62BE1F8EC715CFD7C5D520E6867B6F51D8B1E0F9F00B5A27E">>}]}
+].
