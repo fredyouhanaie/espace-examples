@@ -208,6 +208,21 @@ drain_solved() ->
 
 %%-------------------------------------------------------------------
 %%
+%% The cell workers terminate when they have one number left, however, the relay
+%% workers will still generate `{cell,...}' tuples for those cells. So, we need
+%% to clean up these tuples in order to finish off with a clean tuple space.
+%%
+-spec drain_cells() -> ok.
+drain_cells() ->
+    case espace:inp({cell, '_', '_', '_'}) of
+        nomatch ->
+            ok;
+        {[], Tuple} ->
+            drain_cells()
+    end.
+
+%%-------------------------------------------------------------------
+%%
 %% wait for and collect all the `{solved, Row, Col, Num}' tuples. We expect
 %% `N_solutions` tuples. The function will block until ALL tuples have been
 %% collected.
@@ -221,6 +236,7 @@ drain_solved() ->
 -spec collect_solutions(integer(), solution_map()) -> solution_map().
 collect_solutions(0, Solutions) ->
     drain_solved(),
+    drain_cells(),
     Solutions;
 
 collect_solutions(N_solutions, Solutions) ->
