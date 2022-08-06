@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Fred Youhanaie <fyrlang@anydata.co.uk>
-%%% @copyright (C) 2021, Fred Youhanaie
+%%% @copyright (C) 2022, Fred Youhanaie
 %%% @doc
 %%%
 %%% This module is a collection of functions for solving sudoku puzzles. We use
@@ -16,14 +16,15 @@
 %%% <ul>
 %%%
 %%% <li>The main solver process starts the worker processes and assigns numbers
-%%% to individual cells as defined by the puzzle. It then waits for the
+%%% to individual cells as defined by the puzzle. It then waits for the `NxN'
 %%% `{solved,...}' tuples, one per cell. For each `{solved,...}' tuple received
 %%% a `{cellcast,...}' tuple is generated. Which in turn is picked up by the
 %%% various relay workers.</li>
 %%%
-%%% <li>For each cell there is a worker that waits for `{cell,...}' tuples and
-%%% updates its own state accordingly. Once the cell worker is left with one
-%%% number, it outputs a `{solved,...}' tuple and terminates.</li>
+%%% <li>For each cell there is a worker that waits for `{cell,...}' tuples
+%%% target to its row/col number and updates its own state accordingly. Once the
+%%% cell worker is left with only one number, it outputs a `{solved,...}' tuple
+%%% and terminates.</li>
 %%%
 %%% </ul>
 %%%
@@ -36,17 +37,17 @@
 %%% tuples for `relay_row', `relay_col' and `relay_box'.</li>
 %%%
 %%% <li>`relay_row' waits for `{rowcast,...}' tuples and generates `{cell,...}'
-%%% tuples for all the cells in the same row as the cell.</li>
+%%% tuples for all the cells in the same row as the cell in the tuple.</li>
 %%%
 %%% <li>`relay_col' waits for `{colcast,...}' tuples and generates `{cell,...}'
-%%% tuples for all the cells in the same column as the cell.</li>
+%%% tuples for all the cells in the same column as the cell in the tuple.</li>
 %%%
 %%% <li>`relay_box' waits for `{boxcast,...}' tuples and generates `{cell,...}'
-%%% tuples for all the cells in the same box as the cell.</li>
+%%% tuples for all the cells in the same box as the cell in the tuple.</li>
 %%%
 %%% </ul>
 %%%
-%%% The overall flow of `[tuples]' among `(workers)' is as follows:
+%%% The overall flow of a `[tuple]' between `(workers)' is as follows:
 %%%
 %%% <ol>
 %%%
@@ -57,6 +58,12 @@
 %%% <li> (relay_cell) -> [boxcast] -> (relay_box) -> [cell] -> (cell)</li>
 %%%
 %%% </ol>
+%%%
+%%% The relay workers are stateless, so we can run multiple relays for very
+%%% large puzzles to improve performance. Currently there is no provision for
+%%% multiple relay workers, however, this can easily be achieved with startup
+%%% config parameters, or automatically computed based on the size of the
+%%% puzzle.
 %%%
 %%% The tuple types used for communication are listed below. Currently `Msg' is
 %%% of the form `{R, C, N}' indicating that the cell in row `R' and column `C'
@@ -77,7 +84,8 @@
 %%% in the same box as `{Row, Col}' by the `relay_boxcast' worker.</li>
 %%%
 %%% <li><code>{cell, Row, Col, Msg}</code>: `Msg' is picked up by the cell
-%%% worker at `{Row,Col}'.</li>
+%%% worker at `{Row,Col}'. The `Msg' either addresses the cell itself or one of
+%%% its buddies.</li>
 %%%
 %%% </ul>
 %%%
@@ -109,9 +117,24 @@
 -define(Log_level, warning).
 
 %%-------------------------------------------------------------------
+%% @doc Read a puzzle definition from a file and start the solver.
 %%
-%% Read a puzzle definition from a file and start the solver.
+%% The input file should have two high level terms. The first is a tuple
+%% indicating the size of the puzzle in the form `{Box_rows,Box_cols}'. These
+%% define the dimension of the inner grid box of the puzzle. The actual puzzle
+%% size is the product of these numbers, i.e. `N = Box_rows * Box_cols', e.g.
+%% `{2,3}' and `{3,3}' for `6x6' and `9x9' puzzles respectively.
 %%
+%% The second term is the puzzle itself, it can be a list of lists, or a map. In
+%% the case of list of lists, each list is a row of the puzzle, there should be
+%% `N' lists of `N' elements each. The list elements are numbers in the range
+%% `0..N', where `0' indicates a blank square (cell).
+%%
+%% In the case of a map, each element is of the form `{Row,Col} => Num'. This
+%% can be space efficient for puzzles with minimal number of clues.
+%%
+%% @end
+%%-------------------------------------------------------------------
 -spec solve_file(string()) -> {solution_check(), solution_list()}.
 solve_file(File) ->
     logger:set_primary_config(level, ?Log_level),
@@ -121,9 +144,12 @@ solve_file(File) ->
     solve(Puzzle, Box_rows, Box_cols).
 
 %%-------------------------------------------------------------------
+%% @doc Solve a puzzle.
 %%
-%% Solve a puzzle. We expect the espace application to be running.
+%% We expect the espace application to be running.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec solve(puzzle_map()|puzzle_list(), integer(), integer()) ->
           {solution_check(), solution_list()}.
 solve(Puzzle, Box_rows, Box_cols) ->
@@ -156,13 +182,18 @@ solve(Puzzle, Box_rows, Box_cols) ->
     {Solution_ok, solution_to_list(Solution)}.
 
 %%-------------------------------------------------------------------
+%% @doc Assign the known cell numbers to the cells.
 %%
-%% assign the known cell numbers to the cells. We output `{cell,...}' tuples
-%% which is picked up by the cell workers.
+%% For each cell with non-zero number we output a `{cell,...}' tuple which is
+%% picked up by the corresponding cell worker.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec assign_cells(puzzle_map()|puzzle_list()) -> integer().
 assign_cells(Puzzle) when is_map(Puzzle) ->
-    lists:foreach(fun ({{Row, Col}, Num}) ->
+    lists:foreach(fun ({{_Row, _Col, 0}}) ->
+                          ok;
+                      ({{Row, Col}, Num}) ->
                           out_cell(Row, Col, {Row, Col, Num})
                   end,
                   maps:to_list(Puzzle));
@@ -171,9 +202,13 @@ assign_cells(Puzzle) when is_list(Puzzle) ->
     lists:foldl(fun assign_rows/2, 0, Puzzle).
 
 %%-------------------------------------------------------------------
+%% @doc Assign the known cell numbers for one row of a puzzle.
 %%
+%% For each cell with non-zero number we output a `{cell,...}' tuple which is
+%% picked up by the corresponding cell worker.
 %%
-%%
+%% @end
+%%-------------------------------------------------------------------
 -spec assign_rows([integer()], integer()) -> integer().
 assign_rows(Row_cells, Row_num) ->
     ?LOG_INFO(#{func=>?FUNCTION_NAME, row_num=>Row_num}),
@@ -188,12 +223,13 @@ assign_rows(Row_cells, Row_num) ->
     Row_num+1.
 
 %%-------------------------------------------------------------------
-%%
-%% Check for and warn about left over `{solved,...}' tuples.
+%% @doc Check for, warn about and remove the leftover `{solved,...}' tuples.
 %%
 %% This is precautionary, shouldn't need to call this! It can be removed in
 %% future.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec drain_solved() -> ok.
 drain_solved() ->
     case espace:inp({solved, '_', '_', '_'}) of
@@ -207,21 +243,25 @@ drain_solved() ->
     end.
 
 %%-------------------------------------------------------------------
+%% @doc Remove the leftover `{cell,...}' tuples from the tuple space.
 %%
 %% The cell workers terminate when they have one number left, however, the relay
 %% workers will still generate `{cell,...}' tuples for those cells. So, we need
 %% to clean up these tuples in order to finish off with a clean tuple space.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec drain_cells() -> ok.
 drain_cells() ->
     case espace:inp({cell, '_', '_', '_'}) of
         nomatch ->
             ok;
-        {[], Tuple} ->
+        {[], _Tuple} ->
             drain_cells()
     end.
 
 %%-------------------------------------------------------------------
+%% @doc Collect the solution tuples.
 %%
 %% wait for and collect all the `{solved, Row, Col, Num}' tuples. We expect
 %% `N_solutions` tuples. The function will block until ALL tuples have been
@@ -233,6 +273,8 @@ drain_cells() ->
 %% The solved puzzle is returned as a map. It can later be converted to a list
 %% of lists with `solution_to_list/1'.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec collect_solutions(integer(), solution_map()) -> solution_map().
 collect_solutions(0, Solutions) ->
     drain_solved(),
@@ -246,10 +288,12 @@ collect_solutions(N_solutions, Solutions) ->
     collect_solutions(N_solutions-1, maps:put({Row, Col}, Num, Solutions)).
 
 %%-------------------------------------------------------------------
+%% @doc Convert a solved puzzle from map type to list of lists.
 %%
-%% Convert a solved puzzle from map type to list of lists. This is mainly for
-%% display purposes.
+%% This is mainly for display purposes.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec solution_to_list(solution_map()) -> solution_list().
 solution_to_list(Solution_map) ->
     Sol_list = maps:to_list(Solution_map),
@@ -259,12 +303,13 @@ solution_to_list(Solution_map) ->
     lists:map(fun cols_to_list/1, Rows).
 
 %%-------------------------------------------------------------------
-%%
-%% Update the row of a solution map with a cell's contents.
+%% @doc Update the row of a solution map with a cell's contents.
 %%
 %% The solution map is a nested map of row number to column map elements, where
 %% each column map is column to cell elements.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec update_row({{integer(), integer()}, integer()}, solution_map()) -> solution_map().
 update_row({{Row, Col}, Num}, Sol_map) ->
     Row_map1 = maps:get(Row, Sol_map, #{}),
@@ -272,20 +317,24 @@ update_row({{Row, Col}, Num}, Sol_map) ->
     maps:put(Row, Row_map2, Sol_map).
 
 %%-------------------------------------------------------------------
+%% @doc Convert column map to list of column values.
 %%
 %% Given a column map, return a list of the column values in the order of column
 %% numbers.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec cols_to_list(map()) -> list().
 cols_to_list(Cols_map) ->
     lists:map(fun ({_Col, Num}) -> Num end,
               lists:sort(maps:to_list(Cols_map))).
 
 %%-------------------------------------------------------------------
+%% @doc The cell worker.
 %%
-%% The cell worker. One worker process per cell, identified by `Row'/`Col'. Each
-%% worker keeps track of its own set of candidate numbers, `Numbers'. Once our
-%% set of candidates becomes a single number, we broadcast that we're done.
+%% There is one worker process per cell, identified by `Row'/`Col'. Each worker
+%% keeps track of its own set of candidate numbers, `Numbers'. Once our set of
+%% candidates becomes a single number, we broadcast that we're done.
 %%
 %% On start up, `Numbers' will be the set of number `1..N'. We wait for tuples
 %% of the form `{cell, Row, Col, {RR, CC, Num}}'. If `RR'/`CC' is our address,
@@ -294,6 +343,8 @@ cols_to_list(Cols_map) ->
 %% Otherwise, we're being told that one of our buddies has got `Num', so we take
 %% it out of our list of candidates.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec cell(integer(), integer(), [integer()]) -> ok.
 cell(Row, Col, [Num]) when is_integer(Num) -> %% only one number left, we're done :-)
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row_col=>{Row, Col}, num=>Num}),
@@ -310,19 +361,23 @@ cell(Row, Col, Numbers) ->
     end.
 
 %%-------------------------------------------------------------------
+%% @doc Drop a `{cell,...}' tuple into the tuple space.
 %%
-%% Drop a `{cell,...}' tuple in the tuple space.
-%%
+%% @end
+%%-------------------------------------------------------------------
 -spec out_cell(integer(), integer(), {integer(), integer(), integer()}) -> ok.
 out_cell(Row, Col, Msg) ->
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row=>Row, col=>Col, msg=>Msg}),
     espace:out({cell, Row, Col, Msg}).
 
 %%-------------------------------------------------------------------
+%% @doc Relay a cell message to the row, column and box of cell.
 %%
-%% Wait for a `{cellcast, Row, Col, Num}' tuple and forward it to the row, col
-%% and box relay workers corresponding to the cell at `Row'/`Col'.
+%% Wait for a `{cellcast, Row, Col, Num}' tuple and forward it to the row,
+%% column and box relay workers corresponding to the cell at `Row'/`Col'.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec relay_cellcast() -> none.
 relay_cellcast() ->
     {[Row, Col, Num], _} = espace:in({cellcast, '$1', '$2', '$3'}),
@@ -333,10 +388,13 @@ relay_cellcast() ->
     relay_cellcast().
 
 %%-------------------------------------------------------------------
+%% @doc Relay `Msg' to the cells within a row.
 %%
 %% Wait for a `{rowcast, Row, Msg}' tuple and forward it to the cells within
 %% that row.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec relay_rowcast(integer()) -> none.
 relay_rowcast(N_cols) ->
     {[Row, Msg], _} = espace:in({rowcast, '$1', '$2'}),
@@ -345,10 +403,13 @@ relay_rowcast(N_cols) ->
     relay_rowcast(N_cols).
 
 %%-------------------------------------------------------------------
+%% @doc Relay `Msg' to the cells within a column.
 %%
 %% Wait for a `{colcast, Col, Msg}' tuple and forward it to the cells within
 %% that column.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec relay_colcast(integer()) -> none.
 relay_colcast(N_rows) ->
     {[Col, Msg], _} = espace:in({colcast, '$1', '$2'}),
@@ -357,10 +418,13 @@ relay_colcast(N_rows) ->
     relay_colcast(N_rows).
 
 %%-------------------------------------------------------------------
+%% @doc Relay a `Msg' to the cells within a box.
 %%
 %% Wait for a `{boxcast, Row, Col, Msg}' tuple and forward it to the cells
 %% within that box.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec relay_boxcast(integer(), integer()) -> none.
 relay_boxcast(Box_rows, Box_cols) ->
     {[Row, Col, Msg], _} = espace:in({boxcast, '$1', '$2', '$3'}),
@@ -372,10 +436,13 @@ relay_boxcast(Box_rows, Box_cols) ->
     relay_boxcast(Box_rows, Box_cols).
 
 %%-------------------------------------------------------------------
+%% @doc Return the box address of a cell.
 %%
-%% Given a cell address, `Row' and `Col', determine its box address. The box
+%% Given a cell address, `Row'/`Col', determine its box address. The box
 %% addresses are the row/col numbers of the top left corner of each box.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec box_of(integer(), integer(), integer(), integer()) ->
           {integer(), integer()}.
 box_of(Row, Col, Box_rows, Box_cols) ->
@@ -384,10 +451,12 @@ box_of(Row, Col, Box_rows, Box_cols) ->
     {Row_base, Col_base}.
 
 %%-------------------------------------------------------------------
+%% @doc Check that the `Solution' is correct.
 %%
-%% Check that the `Solution' is correct, ie no duplicates in any row, column or
-%% box.
+%% We check that there are no duplicates in any row, column or box.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec check_solution(solution_map(), integer(), integer()) -> solution_check().
 check_solution(Solution, Box_rows, Box_cols) ->
     Numbers = lists:seq(1, Box_rows * Box_cols),
@@ -395,10 +464,13 @@ check_solution(Solution, Box_rows, Box_cols) ->
     check_numbers(Numbers_list, Numbers, []).
 
 %%-------------------------------------------------------------------
+%% @doc Check the list of `Nums' within a `Group'.
 %%
-%% Check that the list of `Nums' within each `Group' is same as the sequence
-%% `1..N'.
+%% `Group' is one of `row', `col' or `box'. We check that `Nums' is same as the
+%% sequence `1..N'.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec check_numbers([[integer()]], [integer()], list()) ->
           ok | {not_ok, [{tuple(), [integer()]}]}.
 check_numbers([], _Numbers, []) ->
@@ -421,14 +493,17 @@ check_numbers([{Group, Nums}|Nums_list], Numbers, Bad_cells) ->
     end.
 
 %%-------------------------------------------------------------------
+%% @doc Classify the cells into row/col/box groups.
 %%
 %% Each cell belongs to a row, a column and a box. For each row, column and box
-%% we create the list of numbers in each group.
+%% we create the list of numbers in that group.
 %%
-%% We return a list key/value pairs, where each key identifies a group, i.e.
+%% We return a list of key/value pairs, where each key identifies a group, i.e.
 %% `{row, Row}', `{col, Col}' and `{box, Box}', and the corresponding value is
 %% the list of numbers in that group.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec classify_cells(solution_map(), integer(), integer()) ->
           [{tuple(), [integer()]}].
 classify_cells(Solution, Box_rows, Box_cols) ->
@@ -438,9 +513,10 @@ classify_cells(Solution, Box_rows, Box_cols) ->
     maps:to_list(Cell_numbers).
 
 %%-------------------------------------------------------------------
+%% @doc Update the numbers in the groups of the given cell.
 %%
-%% Update the groups of the given cell and its number.
-%%
+%% @end
+%%-------------------------------------------------------------------
 -spec update_cells(integer(), integer(), integer(), integer(), integer(), map()) -> map().
 update_cells(Row, Col, Num, Box_rows, Box_cols, Cells) ->
     Box = box_of(Row, Col, Box_rows, Box_cols),
@@ -450,10 +526,12 @@ update_cells(Row, Col, Num, Box_rows, Box_cols, Cells) ->
     Cells4.
 
 %%-------------------------------------------------------------------
+%% @doc Add `Num' to the list of numbers in `Cells' corresponding to `Key'.
 %%
-%% Add `Num' to the list of numbers in `Cells' corresponding to `Key'. This is
-%% used for the classification of the cells.
+%% This is used during the classification of the cells.
 %%
+%% @end
+%%-------------------------------------------------------------------
 -spec update_map(tuple(), integer(), map()) -> map().
 update_map(Key, Num, Cells) ->
     maps:update_with(Key,
