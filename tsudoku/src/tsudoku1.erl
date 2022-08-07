@@ -98,19 +98,9 @@
 -module(tsudoku1).
 
 -export([solve/3, solve_file/1]).
--export([check_solution/3]).
 
 -include_lib("kernel/include/logger.hrl").
-
-%%-------------------------------------------------------------------
-
--type(puzzle_list() :: [[ integer() ]]).
--type(puzzle_map() :: {integer(), integer(), #{{integer(), integer()} => integer()}}).
-
--type(solution_list() :: [[ integer() ]]).
--type(solution_map() :: #{{integer(), integer()} => integer()}).
-
--type(solution_check() :: ok | {not_ok, [{tuple(), [integer()]}]}).
+-include_lib("tsudoku.hrl").
 
 %%-------------------------------------------------------------------
 
@@ -135,7 +125,7 @@
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec solve_file(string()) -> {solution_check(), solution_list()}.
+-spec solve_file(string()) -> {puzzle_check(), puzzle_list()}.
 solve_file(File) ->
     logger:set_primary_config(level, ?Log_level),
     logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
@@ -151,7 +141,7 @@ solve_file(File) ->
 %% @end
 %%-------------------------------------------------------------------
 -spec solve(puzzle_map()|puzzle_list(), integer(), integer()) ->
-          {solution_check(), solution_list()}.
+          {puzzle_check(), puzzle_list()}.
 solve(Puzzle, Box_rows, Box_cols) ->
     N_rows_cols = Box_rows * Box_cols,
 
@@ -178,7 +168,7 @@ solve(Puzzle, Box_rows, Box_cols) ->
 
     N_cells = N_rows_cols * N_rows_cols,
     Solution = collect_solutions(N_cells, #{}),
-    Solution_ok = check_solution(Solution, Box_rows, Box_cols),
+    Solution_ok = tsudoku_lib:check_solution(Solution, Box_rows, Box_cols),
     {Solution_ok, solution_to_list(Solution)}.
 
 %%-------------------------------------------------------------------
@@ -275,7 +265,7 @@ drain_cells() ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec collect_solutions(integer(), solution_map()) -> solution_map().
+-spec collect_solutions(integer(), puzzle_map()) -> puzzle_map().
 collect_solutions(0, Solutions) ->
     drain_solved(),
     drain_cells(),
@@ -294,7 +284,7 @@ collect_solutions(N_solutions, Solutions) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec solution_to_list(solution_map()) -> solution_list().
+-spec solution_to_list(puzzle_map()) -> puzzle_list().
 solution_to_list(Solution_map) ->
     Sol_list = maps:to_list(Solution_map),
     Sol_map = lists:foldl(fun update_row/2, #{}, Sol_list),
@@ -310,7 +300,7 @@ solution_to_list(Solution_map) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec update_row({{integer(), integer()}, integer()}, solution_map()) -> solution_map().
+-spec update_row({{integer(), integer()}, integer()}, puzzle_map()) -> puzzle_map().
 update_row({{Row, Col}, Num}, Sol_map) ->
     Row_map1 = maps:get(Row, Sol_map, #{}),
     Row_map2 = maps:put(Col, Num, Row_map1),
@@ -428,115 +418,11 @@ relay_colcast(N_rows) ->
 -spec relay_boxcast(integer(), integer()) -> none.
 relay_boxcast(Box_rows, Box_cols) ->
     {[Row, Col, Msg], _} = espace:in({boxcast, '$1', '$2', '$3'}),
-    {R_base, C_base} = box_of(Row, Col, Box_rows, Box_cols),
+    {R_base, C_base} = tsudoku_lib:box_of(Row, Col, Box_rows, Box_cols),
     Out_fun = fun ({R, C}) -> out_cell(R, C, Msg) end,
     lists:foreach(Out_fun, [{R_base+R, C_base+C} ||
                                R <- lists:seq(0,Box_cols-1),
                                C <- lists:seq(0,Box_rows-1)]),
     relay_boxcast(Box_rows, Box_cols).
-
-%%-------------------------------------------------------------------
-%% @doc Return the box address of a cell.
-%%
-%% Given a cell address, `Row'/`Col', determine its box address. The box
-%% addresses are the row/col numbers of the top left corner of each box.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec box_of(integer(), integer(), integer(), integer()) ->
-          {integer(), integer()}.
-box_of(Row, Col, Box_rows, Box_cols) ->
-    Row_base = floor(Row/Box_rows)*Box_rows,
-    Col_base = floor(Col/Box_cols)*Box_cols,
-    {Row_base, Col_base}.
-
-%%-------------------------------------------------------------------
-%% @doc Check that the `Solution' is correct.
-%%
-%% We check that there are no duplicates in any row, column or box.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec check_solution(solution_map(), integer(), integer()) -> solution_check().
-check_solution(Solution, Box_rows, Box_cols) ->
-    Numbers = lists:seq(1, Box_rows * Box_cols),
-    Numbers_list = classify_cells(Solution, Box_rows, Box_cols),
-    check_numbers(Numbers_list, Numbers, []).
-
-%%-------------------------------------------------------------------
-%% @doc Check the list of `Nums' within a `Group'.
-%%
-%% `Group' is one of `row', `col' or `box'. We check that `Nums' is same as the
-%% sequence `1..N'.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec check_numbers([[integer()]], [integer()], list()) ->
-          ok | {not_ok, [{tuple(), [integer()]}]}.
-check_numbers([], _Numbers, []) ->
-    ok;
-
-check_numbers([], _Numbers, Bad_cells) ->
-    {not_ok, Bad_cells};
-
-check_numbers([{Group, Nums}|Nums_list], Numbers, Bad_cells) ->
-    Nums2 = lists:sort(Nums),
-    case Nums2 of
-        Numbers ->
-            check_numbers(Nums_list, Numbers, Bad_cells);
-        _ ->
-            ?LOG_WARNING(#{func => ?FUNCTION_NAME,
-                           group => group,
-                           numbers => Nums2}),
-            check_numbers(Nums_list, Numbers,
-                          [{Group, Nums2}|Bad_cells])
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc Classify the cells into row/col/box groups.
-%%
-%% Each cell belongs to a row, a column and a box. For each row, column and box
-%% we create the list of numbers in that group.
-%%
-%% We return a list of key/value pairs, where each key identifies a group, i.e.
-%% `{row, Row}', `{col, Col}' and `{box, Box}', and the corresponding value is
-%% the list of numbers in that group.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec classify_cells(solution_map(), integer(), integer()) ->
-          [{tuple(), [integer()]}].
-classify_cells(Solution, Box_rows, Box_cols) ->
-    Cell_numbers = maps:fold(fun ({R,C}, N, Cells) ->
-                                     update_cells(R, C, N, Box_rows, Box_cols, Cells)
-                             end, #{}, Solution),
-    maps:to_list(Cell_numbers).
-
-%%-------------------------------------------------------------------
-%% @doc Update the numbers in the groups of the given cell.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec update_cells(integer(), integer(), integer(), integer(), integer(), map()) -> map().
-update_cells(Row, Col, Num, Box_rows, Box_cols, Cells) ->
-    Box = box_of(Row, Col, Box_rows, Box_cols),
-    Cells2 = update_map({row, Row}, Num, Cells),
-    Cells3 = update_map({col, Col}, Num, Cells2),
-    Cells4 = update_map({box, Box}, Num, Cells3),
-    Cells4.
-
-%%-------------------------------------------------------------------
-%% @doc Add `Num' to the list of numbers in `Cells' corresponding to `Key'.
-%%
-%% This is used during the classification of the cells.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec update_map(tuple(), integer(), map()) -> map().
-update_map(Key, Num, Cells) ->
-    maps:update_with(Key,
-                     fun (Numbers) -> [Num|Numbers] end,
-                     [Num],
-                     Cells).
 
 %%-------------------------------------------------------------------

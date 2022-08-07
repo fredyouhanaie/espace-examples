@@ -1,0 +1,148 @@
+%%%-------------------------------------------------------------------
+%%% @author Fred Youhanaie <fyrlang@anydata.co.uk>
+%%% @copyright (C) 2022, Fred Youhanaie
+%%% @doc
+%%%
+%%% This module is a collection of common functions for solving sudoku puzzles.
+%%%
+%%% The functions are used by other specialist tuple space based sudoko solvers.
+%%%
+%%% Throughout this library all cell addresses are `zero-based', for example the
+%%% common 9x9 puzzle has row and column numbers in the range `0..8'.
+%%%
+%%% @end
+%%% Created : 07 August 2022 by Fred Youhanaie <fyrlang@anydata.co.uk>
+%%%-------------------------------------------------------------------
+-module(tsudoku_lib).
+
+-export([check_solution/3, check_puzzle/3]).
+-export([box_of/4]).
+
+%%--------------------------------------------------------------------
+
+-include_lib("kernel/include/logger.hrl").
+-include_lib("tsudoku.hrl").
+
+%%--------------------------------------------------------------------
+%% @doc Check that a puzzle is valid.
+%%
+%% We check that there are no dupicates in a row/col/box other than zeros.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec check_puzzle(list()|map(), integer(), integer()) -> ok.
+check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_map(Puzzle)->
+    ok;
+check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_list(Puzzle) ->
+    ok.
+
+%%--------------------------------------------------------------------
+%% @doc Check that the `Solution' is correct.
+%%
+%% We check that there are no duplicates in any row, column or box.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec check_solution(puzzle_map(), integer(), integer()) -> puzzle_check().
+check_solution(Solution, Box_rows, Box_cols) ->
+    Numbers = lists:seq(1, Box_rows * Box_cols),
+    Numbers_list = classify_cells(Solution, Box_rows, Box_cols),
+    check_numbers(Numbers_list, Numbers, []).
+
+%%--------------------------------------------------------------------
+%% @doc Check the list of `Nums' within a `Group'.
+%%
+%% We chack each `{Group, Nums}' of the input list against the expected number,
+%% which is typically the sequence `1..N'
+%%
+%% @end
+%%--------------------------------------------------------------------
+%% -spec check_numbers([{cell_group(), [integer()]}],
+%%                     [integer()],
+%%                     [{cell_group(), [integer()]}]) ->
+%%           ok | {not_ok, [{cell_group(), [integer()]}]}.
+-spec check_numbers(list(), [integer()], list()) ->
+          ok | {not_ok, list()}.
+check_numbers([], _Numbers, []) ->
+    ok;
+
+check_numbers([], _Numbers, Bad_cells) ->
+    {not_ok, Bad_cells};
+
+check_numbers([{Group, Nums}|Nums_list], Numbers, Bad_cells) ->
+    case lists:sort(Nums) of
+        Numbers ->
+            check_numbers(Nums_list, Numbers, Bad_cells);
+        _ ->
+            ?LOG_WARNING(#{func => ?FUNCTION_NAME,
+                           group => Group,
+                           numbers => Nums}),
+            check_numbers(Nums_list, Numbers, [{Group, Nums}|Bad_cells])
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc Classify the cells into row/col/box groups.
+%%
+%% Each cell belongs to a row, a column and a box. For each row, column and box
+%% we create the list of numbers in that group.
+%%
+%% We return a list of key/value pairs, where each key identifies a group, i.e.
+%% `{row, Row}', `{col, Col}' and `{box, Box}', and the corresponding value is
+%% the list of numbers in that group.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec classify_cells(puzzle_map(), integer(), integer()) -> [cell_group()].
+classify_cells(Solution, Box_rows, Box_cols) ->
+    Cell_numbers = maps:fold(fun ({R,C}, N, Cells) ->
+                                     update_cells(R, C, N, Box_rows, Box_cols, Cells)
+                             end, #{}, Solution),
+    maps:to_list(Cell_numbers).
+
+%%--------------------------------------------------------------------
+%% @doc Return the box address of a cell.
+%%
+%% Given a cell address, `Row'/`Col', determine its box address. The box
+%% addresses are the row/col numbers of the top left corner of each box. Form
+%% example for a `9x9' puzzle the box addresses are the nine pairs of
+%% `0..3'x`0..3'.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec box_of(integer(), integer(), integer(), integer()) ->
+          {integer(), integer()}.
+box_of(Row, Col, Box_rows, Box_cols) ->
+    Row_base = floor(Row/Box_rows)*Box_rows,
+    Col_base = floor(Col/Box_cols)*Box_cols,
+    {Row_base, Col_base}.
+
+%%--------------------------------------------------------------------
+%% @doc Update the numbers in the groups of the given cell.
+%%
+%% Update the `Cells' map with the three groups of `{Row, Col, Num}'.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_cells(integer(), integer(), integer(), integer(), integer(), map()) -> map().
+update_cells(Row, Col, Num, Box_rows, Box_cols, Cells) ->
+    Box = box_of(Row, Col, Box_rows, Box_cols),
+    Cells2 = update_map({row, Row}, Num, Cells),
+    Cells3 = update_map({col, Col}, Num, Cells2),
+    Cells4 = update_map({box, Box}, Num, Cells3),
+    Cells4.
+
+%%--------------------------------------------------------------------
+%% @doc Add `Num' to the list of numbers in `Cells' corresponding to `Group'.
+%%
+%% This is used during the classification of the cells.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_map(cell_group(), integer(), map()) -> map().
+update_map(Group, Num, Cells) ->
+    maps:update_with(Group,
+                     fun (Numbers) -> [Num|Numbers] end,
+                     [Num],
+                     Cells).
+
+%%--------------------------------------------------------------------
