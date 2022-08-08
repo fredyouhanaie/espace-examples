@@ -343,12 +343,16 @@ cell(Row, Col, [Num]) when is_integer(Num) -> %% only one number left, we're don
 
 cell(Row, Col, Numbers) ->
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row_col=>{Row, Col}, numbers=>Numbers}),
-    {[Msg], _} = espace:in({cell, Row, Col, '$3'}),
-    case Msg of
-        {Row, Col, Num} -> %% this is us, we're assigned a number
-            espace:out({solved, Row, Col, Num});
-        {_RR, _CC, Num} -> %% it must be one of our buddies
-            cell(Row, Col, Numbers -- [Num])%% take it out of our list of candidates
+    case espace:in({cell, Row, Col, '$3'}) of
+        quit ->
+            ok;
+        {[Msg], _} ->
+            case Msg of
+                {Row, Col, Num} -> %% this is us, we're assigned a number
+                    espace:out({solved, Row, Col, Num});
+                {_RR, _CC, Num} -> %% it must be one of our buddies
+                    cell(Row, Col, Numbers -- [Num]) %% take it out of our list of candidates
+            end
     end.
 
 %%-------------------------------------------------------------------
@@ -369,14 +373,18 @@ out_cell(Row, Col, Msg) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec relay_cellcast() -> none.
+-spec relay_cellcast() -> ok.
 relay_cellcast() ->
-    {[Row, Col, Num], _} = espace:in({cellcast, '$1', '$2', '$3'}),
-    Msg = {Row, Col, Num},
-    espace:out({rowcast, Row, Msg}),
-    espace:out({colcast, Col, Msg}),
-    espace:out({boxcast, Row, Col, Msg}),
-    relay_cellcast().
+    case espace:in({cellcast, '$1', '$2', '$3'}) of
+        quit ->
+            ok;
+        {[Row, Col, Num], _} ->
+            Msg = {Row, Col, Num},
+            espace:out({rowcast, Row, Msg}),
+            espace:out({colcast, Col, Msg}),
+            espace:out({boxcast, Row, Col, Msg}),
+            relay_cellcast()
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc Relay `Msg' to the cells within a row.
@@ -386,12 +394,16 @@ relay_cellcast() ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec relay_rowcast(integer()) -> none.
+-spec relay_rowcast(integer()) -> ok.
 relay_rowcast(N_cols) ->
-    {[Row, Msg], _} = espace:in({rowcast, '$1', '$2'}),
-    Out_fun = fun (Col) -> out_cell(Row, Col, Msg) end,
-    lists:foreach(Out_fun, lists:seq(0, N_cols-1)),
-    relay_rowcast(N_cols).
+    case espace:in({rowcast, '$1', '$2'}) of
+        quit ->
+            ok;
+        {[Row, Msg], _} ->
+            Out_fun = fun (Col) -> out_cell(Row, Col, Msg) end,
+            lists:foreach(Out_fun, lists:seq(0, N_cols-1)),
+            relay_rowcast(N_cols)
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc Relay `Msg' to the cells within a column.
@@ -401,12 +413,16 @@ relay_rowcast(N_cols) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec relay_colcast(integer()) -> none.
+-spec relay_colcast(integer()) -> ok.
 relay_colcast(N_rows) ->
-    {[Col, Msg], _} = espace:in({colcast, '$1', '$2'}),
-    Out_fun = fun (Row) -> out_cell(Row, Col, Msg) end,
-    lists:foreach(Out_fun, lists:seq(0, N_rows-1)),
-    relay_colcast(N_rows).
+    case espace:in({colcast, '$1', '$2'}) of
+        quit ->
+            ok;
+        {[Col, Msg], _} ->
+            Out_fun = fun (Row) -> out_cell(Row, Col, Msg) end,
+            lists:foreach(Out_fun, lists:seq(0, N_rows-1)),
+            relay_colcast(N_rows)
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc Relay a `Msg' to the cells within a box.
@@ -416,14 +432,18 @@ relay_colcast(N_rows) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec relay_boxcast(integer(), integer()) -> none.
+-spec relay_boxcast(integer(), integer()) -> ok.
 relay_boxcast(Box_rows, Box_cols) ->
-    {[Row, Col, Msg], _} = espace:in({boxcast, '$1', '$2', '$3'}),
-    {R_base, C_base} = tsudoku_lib:box_of(Row, Col, Box_rows, Box_cols),
-    Out_fun = fun ({R, C}) -> out_cell(R, C, Msg) end,
-    lists:foreach(Out_fun, [{R_base+R, C_base+C} ||
-                               R <- lists:seq(0,Box_cols-1),
-                               C <- lists:seq(0,Box_rows-1)]),
-    relay_boxcast(Box_rows, Box_cols).
+    case espace:in({boxcast, '$1', '$2', '$3'}) of
+        quit ->
+            ok;
+        {[Row, Col, Msg], _} ->
+            {R_base, C_base} = tsudoku_lib:box_of(Row, Col, Box_rows, Box_cols),
+            Out_fun = fun ({R, C}) -> out_cell(R, C, Msg) end,
+            lists:foreach(Out_fun, [{R_base+R, C_base+C} ||
+                                       R <- lists:seq(0,Box_cols-1),
+                                       C <- lists:seq(0,Box_rows-1)]),
+            relay_boxcast(Box_rows, Box_cols)
+    end.
 
 %%-------------------------------------------------------------------
