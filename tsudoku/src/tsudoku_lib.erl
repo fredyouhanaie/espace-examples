@@ -46,8 +46,8 @@ check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_list(Puzzle) ->
 -spec check_solution(puzzle_map(), integer(), integer()) -> puzzle_check().
 check_solution(Solution, Box_rows, Box_cols) ->
     Numbers = lists:seq(1, Box_rows * Box_cols),
-    Numbers_list = classify_cells(Solution, Box_rows, Box_cols),
-    check_numbers(Numbers_list, Numbers, []).
+    Cell_groups = classify_cells(Solution, Box_rows, Box_cols),
+    check_numbers(Cell_groups, Numbers, []).
 
 %%--------------------------------------------------------------------
 %% @doc Check the list of `Nums' within a `Group'.
@@ -57,12 +57,10 @@ check_solution(Solution, Box_rows, Box_cols) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
-%% -spec check_numbers([{cell_group(), [integer()]}],
-%%                     [integer()],
-%%                     [{cell_group(), [integer()]}]) ->
-%%           ok | {not_ok, [{cell_group(), [integer()]}]}.
--spec check_numbers(list(), [integer()], list()) ->
-          ok | {not_ok, list()}.
+-spec check_numbers([{cell_group(), [integer()]}],
+                    [integer()],
+                    [{cell_group(), [integer()]}]) ->
+          ok | {not_ok, [{cell_group(), [integer()]}]}.
 check_numbers([], _Numbers, []) ->
     ok;
 
@@ -92,12 +90,12 @@ check_numbers([{Group, Nums}|Nums_list], Numbers, Bad_cells) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec classify_cells(puzzle_map(), integer(), integer()) -> [cell_group()].
+-spec classify_cells(puzzle_map(), integer(), integer()) -> [{cell_group(), [integer()]}].
 classify_cells(Solution, Box_rows, Box_cols) ->
-    Cell_numbers = maps:fold(fun ({R,C}, N, Cells) ->
+    Cell_groups = maps:fold(fun ({R,C}, N, Cells) ->
                                      update_cells(R, C, N, Box_rows, Box_cols, Cells)
                              end, #{}, Solution),
-    maps:to_list(Cell_numbers).
+    maps:to_list(Cell_groups).
 
 %%--------------------------------------------------------------------
 %% @doc Return the box address of a cell.
