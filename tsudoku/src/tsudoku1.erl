@@ -3,21 +3,22 @@
 %%% @copyright (C) 2022, Fred Youhanaie
 %%% @doc
 %%%
-%%% This module is a collection of functions for solving sudoku puzzles. We use
-%%% one of the simpler methods of solving the puzzle. Initially all cells are
-%%% given their assigned number from the puzzle, or the set of all numbers
-%%% `1..N' as candidates. Then, the numbers assigned to the buddy cells of a
-%%% cell are eliminated from the set of candidate numbers of that cell until all
-%%% the cells are left with one number each.
+%%% This module is a collection of functions for solving sudoku puzzles using
+%%% one of the simplest known methods. Initially all cells are given either
+%%% their assigned number from the puzzle, or the set of all numbers `1..N' as
+%%% candidates. Then, the numbers assigned to the buddy cells of a cell, i.e.
+%%% those in the same row/column/box as the cell, are eliminated from the set of
+%%% candidate numbers of that cell until all the cells are left with one number
+%%% each.
 %%%
-%%% Multiple specialist workers carry out the computation by broadcasting
-%%% specific facts about the cells via the tuple space.
+%%% Multiple specialist workers carry out the computation by broadcasting facts
+%%% about specific cells via the tuple space:
 %%%
 %%% <ul>
 %%%
 %%% <li>The main solver process starts the worker processes and assigns numbers
 %%% to individual cells as defined by the puzzle. It then waits for the `NxN'
-%%% `{solved,...}' tuples, one per cell. For each `{solved,...}' tuple received
+%%% `{solved,...}' tuples (one per cell). For each `{solved,...}' tuple received
 %%% a `{cellcast,...}' tuple is generated. Which in turn is picked up by the
 %%% various relay workers.</li>
 %%%
