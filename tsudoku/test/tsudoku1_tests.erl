@@ -20,7 +20,9 @@
          [1, 2, 3, 4]]).
 
 puzzle_1_test() ->
-    ?assertEqual(tsudoku1:solve_file(?Puzzle_1), {ok, ?Solution_1}),
+    tsudoku1:solve_file(?Puzzle_1),
+    {[Solution_1], _} = espace:in({done, '$1'}),
+    ?assertEqual(Solution_1, {ok, ?Solution_1}),
     espace:stop().
 
 %%%-------------------------------------------------------------------
@@ -35,7 +37,9 @@ puzzle_1_test() ->
          [5, 2, 4, 3, 6, 1]]).
 
 puzzle_2_test() ->
-    ?assertEqual(tsudoku1:solve_file(?Puzzle_2), {ok, ?Solution_2}),
+    tsudoku1:solve_file(?Puzzle_2),
+    {[Solution_2], _} = espace:in({done, '$1'}),
+    ?assertEqual(Solution_2, {ok, ?Solution_2}),
     espace:stop().
 
 %%%-------------------------------------------------------------------

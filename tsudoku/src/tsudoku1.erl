@@ -16,16 +16,22 @@
 %%%
 %%% <ul>
 %%%
-%%% <li>The main solver process starts the worker processes and assigns numbers
-%%% to individual cells as defined by the puzzle. It then waits for the `NxN'
-%%% `{solved,...}' tuples (one per cell). For each `{solved,...}' tuple received
-%%% a `{cellcast,...}' tuple is generated. Which in turn is picked up by the
-%%% various relay workers.</li>
+%%% <li>The main solver function starts the worker processes and assigns numbers
+%%% to individual cells as defined by the puzzle. The rest of the computation
+%%% will then continue in the background. The process that initiates the solver,
+%%% can then wait for the `{done, Solution}' tuple.</li>
 %%%
-%%% <li>For each cell there is a worker that waits for `{cell,...}' tuples
-%%% target to its row/col number and updates its own state accordingly. Once the
-%%% cell worker is left with only one number, it outputs a `{solved,...}' tuple
-%%% and terminates.</li>
+%%% <li>`collector' will wait (forever) for the `NxN' `{solved,...}' tuples (one
+%%% per cell). For each `{solved,...}' tuple received a `{cellcast,...}' tuple
+%%% will be generated. Which in turn will be picked up by the various relay
+%%% workers. Once the worker has collected all the `NxN' tuples, it will clean
+%%% up the TS, check the solution, and drom the solution tuple, `{solution,
+%%% Solution}', into the tuple space.</li>
+%%%
+%%% <li>For each cell there is a worker that will wait for `{cell,...}' tuples
+%%% targeted at its row/col number and updates its own state accordingly (list
+%%% of candidate numbers). Once the cell worker is left with only one number, it
+%%% will output a `{solved,...}' tuple and terminates.</li>
 %%%
 %%% </ul>
 %%%
@@ -53,7 +59,7 @@
 %%% <ol>
 %%%
 %%% <li> (solver) -> [cell] -> (cell)</li>
-%%% <li> (cell) -> [solved] -> (solver) -> [cellcast] -> (relay_cell)</li>
+%%% <li> (cell) -> [solved] -> (collector) -> [cellcast] -> (relay_cell)</li>
 %%% <li> (relay_cell) -> [rowcast] -> (relay_row) -> [cell] -> (cell)</li>
 %%% <li> (relay_cell) -> [colcast] -> (relay_col) -> [cell] -> (cell)</li>
 %%% <li> (relay_cell) -> [boxcast] -> (relay_box) -> [cell] -> (cell)</li>
@@ -122,7 +128,8 @@
 %% `0..N', where `0' indicates a blank square (cell).
 %%
 %% In the case of a map, each element is of the form `{Row,Col} => Num'. This
-%% can be space efficient for puzzles with minimal number of clues.
+%% can be space efficient for puzzles with minimal number of clues, since we
+%% only need to include the clues.
 %%
 %% @end
 %%-------------------------------------------------------------------
@@ -168,9 +175,10 @@ solve(Puzzle, Box_rows, Box_cols) ->
     assign_cells(Puzzle),
 
     N_cells = N_rows_cols * N_rows_cols,
-    Solution = collect_solutions(N_cells, #{}),
-    Solution_ok = tsudoku_lib:check_solution(Solution, Box_rows, Box_cols),
-    {Solution_ok, solution_to_list(Solution)}.
+
+    %% start the collector
+    %%
+    espace:worker({fun collector/4, [N_cells, #{}, Box_rows, Box_cols]}).
 
 %%-------------------------------------------------------------------
 %% @doc Assign the known cell numbers to the cells.
@@ -266,17 +274,21 @@ drain_cells() ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec collect_solutions(integer(), puzzle_map()) -> puzzle_map().
-collect_solutions(0, Solutions) ->
+-spec collector(integer(), puzzle_map(), integer(), integer()) -> ok.
+collector(0, Solution, Box_rows, Box_cols) ->
     drain_solved(),
     drain_cells(),
-    Solutions;
+    Solution_ok = tsudoku_lib:check_solution(Solution, Box_rows, Box_cols),
+    espace:out({done, {Solution_ok, solution_to_list(Solution)}});
 
-collect_solutions(N_solutions, Solutions) ->
-    ?LOG_NOTICE(#{func=>?FUNCTION_NAME, n_sol=>N_solutions}),
-    {[Row, Col, Num], _} = espace:in({solved, '$1', '$2', '$3'}),
-    espace:out({cellcast, Row, Col, Num}),
-    collect_solutions(N_solutions-1, maps:put({Row, Col}, Num, Solutions)).
+collector(N_solutions, Solution, Box_rows, Box_cols) ->
+    case espace:in({solved, '$1', '$2', '$3'}) of
+        quit ->
+            ok;
+        {[Row, Col, Num], _} ->
+            espace:out({cellcast, Row, Col, Num}),
+            collector(N_solutions-1, maps:put({Row, Col}, Num, Solution), Box_rows, Box_cols)
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc Convert a solved puzzle from map type to list of lists.
