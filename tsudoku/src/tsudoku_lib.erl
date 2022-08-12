@@ -47,7 +47,7 @@ check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_list(Puzzle) ->
 check_solution(Solution, Box_rows, Box_cols) ->
     Numbers = lists:seq(1, Box_rows * Box_cols),
     Cell_groups = classify_cells(Solution, Box_rows, Box_cols),
-    check_numbers(Cell_groups, Numbers, []).
+    check_numbers(Cell_groups, Numbers).
 
 %%--------------------------------------------------------------------
 %% @doc Check the list of `Nums' within a `Group'.
@@ -57,25 +57,15 @@ check_solution(Solution, Box_rows, Box_cols) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec check_numbers([{cell_group(), [integer()]}],
-                    [integer()],
-                    [{cell_group(), [integer()]}]) ->
+-spec check_numbers([{cell_group(), [integer()]}], [integer()]) ->
           ok | {not_ok, [{cell_group(), [integer()]}]}.
-check_numbers([], _Numbers, []) ->
-    ok;
-
-check_numbers([], _Numbers, Bad_cells) ->
-    {not_ok, Bad_cells};
-
-check_numbers([{Group, Nums}|Nums_list], Numbers, Bad_cells) ->
-    case lists:sort(Nums) of
-        Numbers ->
-            check_numbers(Nums_list, Numbers, Bad_cells);
-        _ ->
-            ?LOG_WARNING(#{func => ?FUNCTION_NAME,
-                           group => Group,
-                           numbers => Nums}),
-            check_numbers(Nums_list, Numbers, [{Group, Nums}|Bad_cells])
+check_numbers(Nums_list, Numbers) ->
+    Nums_bad = fun ({Group, Nums}) -> (Nums--Numbers) =/= [] end,
+    case lists:filter(Nums_bad, Nums_list) of
+        [] ->
+            ok;
+        Bad_cells ->
+            {not_ok, Bad_cells}
     end.
 
 %%--------------------------------------------------------------------
