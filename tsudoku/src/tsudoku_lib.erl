@@ -60,7 +60,7 @@ check_solution(Solution, Box_rows, Box_cols) ->
 -spec check_numbers([{cell_group(), [integer()]}], [integer()]) ->
           ok | {not_ok, [{cell_group(), [integer()]}]}.
 check_numbers(Nums_list, Numbers) ->
-    Nums_bad = fun ({Group, Nums}) -> (Nums--Numbers) =/= [] end,
+    Nums_bad = fun ({_Group, Nums}) -> (Nums--Numbers) =/= [] end,
     case lists:filter(Nums_bad, Nums_list) of
         [] ->
             ok;
