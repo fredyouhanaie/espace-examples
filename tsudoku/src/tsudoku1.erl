@@ -158,7 +158,7 @@ solve(Puzzle, Box_rows, Box_cols) ->
     espace:worker({fun relay_cellcast/0, []}),
     espace:worker({fun relay_rowcast/1, [N_rows_cols]}),
     espace:worker({fun relay_colcast/1, [N_rows_cols]}),
-    espace:worker({fun relay_boxcast/2, [Box_rows,Box_cols]}),
+    espace:worker({fun relay_boxcast/3, [Box_rows,Box_cols, #{}]}),
 
     %% start the individual cell workers
     %%
@@ -442,20 +442,30 @@ relay_colcast(N_rows) ->
 %% Wait for a `{boxcast, Row, Col, Msg}' tuple and forward it to the cells
 %% within that box.
 %%
+%% The parameter `Box_map' acts as a cache of results from previous
+%% calls to `box_of/4'. When the function (worker) is first called,
+%% `Box_map' should have the value `#{}'.
+%%
 %% @end
 %%-------------------------------------------------------------------
--spec relay_boxcast(integer(), integer()) -> ok.
-relay_boxcast(Box_rows, Box_cols) ->
+-spec relay_boxcast(integer(), integer(), map()) -> ok.
+relay_boxcast(Box_rows, Box_cols, Box_map) ->
     case espace:in({boxcast, '$1', '$2', '$3'}) of
         quit ->
             ok;
         {[Row, Col, Msg], _} ->
-            {R_base, C_base} = tsudoku_lib:box_of(Row, Col, Box_rows, Box_cols),
+            Box_map2 = case maps:get({Row, Col}, Box_map, none) of
+                           none ->
+                               {R_base, C_base} = tsudoku_lib:box_of(Row, Col, Box_rows, Box_cols),
+                               maps:put({Row, Col}, {R_base, C_base}, Box_map);
+                           {R_base, C_base} ->
+                               Box_map
+                       end,
             Out_fun = fun ({R, C}) -> out_cell(R, C, Msg) end,
             lists:foreach(Out_fun, [{R_base+R, C_base+C} ||
                                        R <- lists:seq(0,Box_cols-1),
                                        C <- lists:seq(0,Box_rows-1)]),
-            relay_boxcast(Box_rows, Box_cols)
+            relay_boxcast(Box_rows, Box_cols, Box_map2)
     end.
 
 %%-------------------------------------------------------------------
