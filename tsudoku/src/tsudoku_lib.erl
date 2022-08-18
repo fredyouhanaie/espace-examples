@@ -16,7 +16,7 @@
 -module(tsudoku_lib).
 
 -export([check_solution/3, check_puzzle/3]).
--export([box_of/4]).
+-export([box_of/4, puzzle_to_list/1]).
 
 %%--------------------------------------------------------------------
 
@@ -132,5 +132,49 @@ update_map(Group, Num, Cells) ->
                      fun (Numbers) -> [Num|Numbers] end,
                      [Num],
                      Cells).
+
+%%--------------------------------------------------------------------
+%% @doc Convert a puzzle from map type to list of lists.
+%%
+%% `Puzzle' is a map with elements of the form `{Row,Col} => Num'.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec puzzle_to_list(puzzle_map()) -> puzzle_list().
+puzzle_to_list(Puzzle) ->
+    Puzzle_list = maps:to_list(Puzzle),
+    Puzzle_map  = lists:foldl(fun update_row/2, #{}, Puzzle_list),
+    Rows = lists:map(fun ({_Row, Col}) -> Col end,
+                    lists:sort(maps:to_list(Puzzle_map))),
+    lists:map(fun cols_to_list/1, Rows).
+
+%%--------------------------------------------------------------------
+%% @doc Update the row of a nested puzzle map with a cell's contents.
+%%
+%% `Puzzle_map' is a nested map of row number to column map elements, where each
+%% column map is of the form `{Col => Num}', e.g.
+%%
+%% `#{R1 => #{C1 => N11, C2 => N12}, R2 => #{C1 => N21, C2 => N22}, ...}'
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_row({{integer(), integer()}, integer()}, puzzle_map_nested()) -> puzzle_map_nested().
+update_row({{Row, Col}, Num}, Puzzle_map) ->
+    Row_map_cur = maps:get(Row, Puzzle_map, #{}),
+    Row_map_new = maps:put(Col, Num, Row_map_cur),
+    maps:put(Row, Row_map_new, Puzzle_map).
+
+%%--------------------------------------------------------------------
+%% @doc Convert column map to list of column values.
+%%
+%% Given a column map, return a list of the column values in the order of column
+%% numbers.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec cols_to_list(map()) -> list().
+cols_to_list(Cols_map) ->
+    lists:map(fun ({_Col, Num}) -> Num end,
+              lists:sort(maps:to_list(Cols_map))).
 
 %%--------------------------------------------------------------------

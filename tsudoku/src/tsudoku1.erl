@@ -270,7 +270,7 @@ drain_cells() ->
 %% tuples of type `{cellcast, Row, Col, Num}'.
 %%
 %% The solved puzzle is returned as a map. It can later be converted to a list
-%% of lists with `solution_to_list/1'.
+%% of lists with `puzzle_to_list/1'.
 %%
 %% @end
 %%-------------------------------------------------------------------
@@ -279,7 +279,7 @@ collector(0, Solution, Box_rows, Box_cols) ->
     drain_solved(),
     drain_cells(),
     Solution_ok = tsudoku_lib:check_solution(Solution, Box_rows, Box_cols),
-    espace:out({done, {Solution_ok, solution_to_list(Solution)}});
+    espace:out({done, {Solution_ok, tsudoku_lib:puzzle_to_list(Solution)}});
 
 collector(N_solutions, Solution, Box_rows, Box_cols) ->
     case espace:in({solved, '$1', '$2', '$3'}) of
@@ -289,48 +289,6 @@ collector(N_solutions, Solution, Box_rows, Box_cols) ->
             espace:out({cellcast, Row, Col, Num}),
             collector(N_solutions-1, maps:put({Row, Col}, Num, Solution), Box_rows, Box_cols)
     end.
-
-%%-------------------------------------------------------------------
-%% @doc Convert a solved puzzle from map type to list of lists.
-%%
-%% This is mainly for display purposes.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec solution_to_list(puzzle_map()) -> puzzle_list().
-solution_to_list(Solution_map) ->
-    Sol_list = maps:to_list(Solution_map),
-    Sol_map = lists:foldl(fun update_row/2, #{}, Sol_list),
-    Rows = lists:map(fun ({_Row, Col}) -> Col end,
-                    lists:sort(maps:to_list(Sol_map))),
-    lists:map(fun cols_to_list/1, Rows).
-
-%%-------------------------------------------------------------------
-%% @doc Update the row of a solution map with a cell's contents.
-%%
-%% The solution map is a nested map of row number to column map elements, where
-%% each column map is column to cell elements.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec update_row({{integer(), integer()}, integer()}, puzzle_map()) -> puzzle_map().
-update_row({{Row, Col}, Num}, Sol_map) ->
-    Row_map1 = maps:get(Row, Sol_map, #{}),
-    Row_map2 = maps:put(Col, Num, Row_map1),
-    maps:put(Row, Row_map2, Sol_map).
-
-%%-------------------------------------------------------------------
-%% @doc Convert column map to list of column values.
-%%
-%% Given a column map, return a list of the column values in the order of column
-%% numbers.
-%%
-%% @end
-%%-------------------------------------------------------------------
--spec cols_to_list(map()) -> list().
-cols_to_list(Cols_map) ->
-    lists:map(fun ({_Col, Num}) -> Num end,
-              lists:sort(maps:to_list(Cols_map))).
 
 %%-------------------------------------------------------------------
 %% @doc The cell worker.

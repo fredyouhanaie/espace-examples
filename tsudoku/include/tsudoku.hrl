@@ -14,6 +14,7 @@
 %%
 -type(puzzle_list() :: [[ integer() ]]).
 -type(puzzle_map() :: #{{integer(), integer()} => integer()}).
+-type(puzzle_map_nested() :: #{integer() => #{integer() => integer()}}).
 
 %%--------------------------------------------------------------------
 %% The result of a puzzle/solution check.
