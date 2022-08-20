@@ -18,7 +18,7 @@
 -export([check_solution/3, check_puzzle/3]).
 -export([box_of/4, puzzle_to_list/1]).
 
--export([read_puzzle/1]).
+-export([read_puzzle/1, puzzle_ok/3]).
 
 %%--------------------------------------------------------------------
 
@@ -51,7 +51,12 @@
 read_puzzle(File) ->
     case file:consult(File) of
         {ok, [{Box_rows, Box_cols}, Puzzle]} ->
-            {{Box_rows, Box_cols}, Puzzle};
+            case puzzle_ok(Puzzle, Box_rows, Box_cols) of
+                true ->
+                    {{Box_rows, Box_cols}, Puzzle};
+                false ->
+                    {error, bad_format}
+            end;
         {ok, _} ->
             ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>"Bad format"}),
             {error, bad_format};
@@ -213,5 +218,30 @@ update_row({{Row, Col}, Num}, Puzzle_map) ->
 cols_to_list(Cols_map) ->
     lists:map(fun ({_Col, Num}) -> Num end,
               lists:sort(maps:to_list(Cols_map))).
+
+%%--------------------------------------------------------------------
+%% @doc Return true if `Puzzle' has the correct structure
+%%
+%% For list of lists the inner and outer lists must be of correct length.
+%%
+%% For maps the row and column numbers of keys must be within range.
+%%
+%% The contents of the cells are not checked. These are left for
+%% `check_puzzle', which will look for duplicates, etc.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec puzzle_ok(list(), integer(), integer()) -> boolean().
+puzzle_ok(Puzzle, Box_rows, Box_cols) when is_list(Puzzle) ->
+    Order = Box_rows*Box_cols,
+    Row_is_good = fun (X) -> is_list(X) andalso length(X) == Order end,
+    Puzzle_ok = (length(Puzzle) == Order) andalso lists:all(Row_is_good, Puzzle),
+    Puzzle_ok;
+
+puzzle_ok(Puzzle, Box_rows, Box_cols) when is_map(Puzzle) ->
+    NN = Box_rows*Box_cols,
+    Within_range = fun (X) -> X >= 0 andalso X < NN end,
+    Key_is_good = fun ({R, C}) ->  Within_range(R) andalso Within_range(C) end,
+    lists:all(Key_is_good, maps:keys(Puzzle)).
 
 %%--------------------------------------------------------------------
