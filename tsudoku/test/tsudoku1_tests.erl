@@ -41,6 +41,16 @@ puzzle_1_test() ->
 
 %%--------------------------------------------------------------------
 
+-define(Puzzle_1_2, "test/puzzle_4x4_2.dat").
+
+puzzle_1_2_test() ->
+    tsudoku1:solve_file(?Puzzle_1_2),
+    {[Solution], _} = espace:in({done, '$1'}),
+    ?assertEqual(Solution, {ok, ?Solution_1}),
+    espace:stop().
+
+%%--------------------------------------------------------------------
+
 -define(Puzzle_2, "test/puzzle_6x6_3.dat").
 -define(Solution_2,
         [[4, 3, 2, 5, 1, 6],
