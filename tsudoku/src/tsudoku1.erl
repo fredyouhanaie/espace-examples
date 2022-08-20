@@ -180,7 +180,7 @@ solve(Puzzle, Box_rows, Box_cols) ->
 %%-------------------------------------------------------------------
 -spec assign_cells(puzzle_map()|puzzle_list()) -> integer().
 assign_cells(Puzzle) when is_map(Puzzle) ->
-    lists:foreach(fun ({{_Row, _Col, 0}}) ->
+    lists:foreach(fun ({{_Row, _Col}, 0}) ->
                           ok;
                       ({{Row, Col}, Num}) ->
                           out_cell(Row, Col, {Row, Col, Num})
