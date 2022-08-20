@@ -10,7 +10,21 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
-%%%-------------------------------------------------------------------
+%%--------------------------------------------------------------------
+
+-define(Bad_file_1, "test/non-existent-file"). %% this files should never exist!
+read_1_test() ->
+    ?assertEqual({error,enoent}, tsudoku1:solve_file(?Bad_file_1)),
+    espace:stop().
+
+%%--------------------------------------------------------------------
+
+-define(Puzzle_bad_1, "test/puzzle_bad_1.dat").
+read_2_test() ->
+    ?assertEqual({error,bad_format}, tsudoku1:solve_file(?Puzzle_bad_1)),
+    espace:stop().
+
+%%--------------------------------------------------------------------
 
 -define(Puzzle_1, "test/puzzle_4x4_1.dat").
 -define(Solution_1,
@@ -25,7 +39,7 @@ puzzle_1_test() ->
     ?assertEqual(Solution_1, {ok, ?Solution_1}),
     espace:stop().
 
-%%%-------------------------------------------------------------------
+%%--------------------------------------------------------------------
 
 -define(Puzzle_2, "test/puzzle_6x6_3.dat").
 -define(Solution_2,
@@ -42,4 +56,4 @@ puzzle_2_test() ->
     ?assertEqual(Solution_2, {ok, ?Solution_2}),
     espace:stop().
 
-%%%-------------------------------------------------------------------
+%%--------------------------------------------------------------------

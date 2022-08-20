@@ -18,10 +18,47 @@
 -export([check_solution/3, check_puzzle/3]).
 -export([box_of/4, puzzle_to_list/1]).
 
+-export([read_puzzle/1]).
+
 %%--------------------------------------------------------------------
 
 -include_lib("kernel/include/logger.hrl").
 -include_lib("tsudoku.hrl").
+
+%%--------------------------------------------------------------------
+%% @doc Read and return a puzzle definition from a file.
+%%
+%% The input file should have two high level terms. The first is a tuple
+%% indicating the size of the puzzle in the form `{Box_rows,Box_cols}'. These
+%% define the dimension of the inner grid box of the puzzle. The actual puzzle
+%% size is the product of these numbers, i.e. `N = Box_rows * Box_cols', e.g.
+%% `{2,3}' and `{3,3}' for `6x6' and `9x9' puzzles respectively.
+%%
+%% The second term is the puzzle itself, it can be a list of lists, or a map. In
+%% the case of list of lists, each list is a row of the puzzle, there should be
+%% `N' lists of `N' elements each. The list elements are numbers in the range
+%% `0..N', where `0' indicates a blank square (cell).
+%%
+%% In the case of a map, each element is of the form `{Row,Col} => Num'. This
+%% can be space efficient for puzzles with minimal number of clues, since we
+%% only need to include the clues.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec read_puzzle(string()) ->
+          {{integer(), integer()}, puzzle_map()|puzzle_list()} |
+          {error, term()}.
+read_puzzle(File) ->
+    case file:consult(File) of
+        {ok, [{Box_rows, Box_cols}, Puzzle]} ->
+            {{Box_rows, Box_cols}, Puzzle};
+        {ok, _} ->
+            ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>"Bad format"}),
+            {error, bad_format};
+        {error, Reason} ->
+            ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>Reason}),
+            {error, Reason}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Check that a puzzle is valid.
