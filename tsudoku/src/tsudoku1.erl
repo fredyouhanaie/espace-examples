@@ -133,7 +133,7 @@
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec solve_file(string()) -> {puzzle_check(), puzzle_list()}.
+-spec solve_file(string()) -> {error, term()} | ok.
 solve_file(File) ->
     logger:set_primary_config(level, ?Log_level),
     logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
@@ -148,8 +148,7 @@ solve_file(File) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec solve(puzzle_map()|puzzle_list(), integer(), integer()) ->
-          {puzzle_check(), puzzle_list()}.
+-spec solve(puzzle_map()|puzzle_list(), integer(), integer()) -> ok.
 solve(Puzzle, Box_rows, Box_cols) ->
     N_rows_cols = Box_rows * Box_cols,
 
