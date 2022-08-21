@@ -15,7 +15,7 @@
 %%%-------------------------------------------------------------------
 -module(tsudoku_lib).
 
--export([check_solution/3, check_puzzle/3]).
+-export([check_solution/3]).
 -export([box_of/4, puzzle_to_list/1]).
 
 -export([read_puzzle/1, puzzle_ok/3]).
@@ -66,19 +66,6 @@ read_puzzle(File) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Check that a puzzle is valid.
-%%
-%% We check that there are no dupicates in a row/col/box other than zeros.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec check_puzzle(list()|map(), integer(), integer()) -> ok.
-check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_map(Puzzle)->
-    ok;
-check_puzzle(Puzzle, _Box_rows, _Box_cols) when is_list(Puzzle) ->
-    ok.
-
-%%--------------------------------------------------------------------
 %% @doc Check that the `Solution' is correct.
 %%
 %% We check that there are no duplicates in any row, column or box.
@@ -94,13 +81,12 @@ check_solution(Solution, Box_rows, Box_cols) ->
 %%--------------------------------------------------------------------
 %% @doc Check the list of `Nums' within a `Group'.
 %%
-%% We chack each `{Group, Nums}' of the input list against the expected number,
+%% We check each `{Group, Nums}' of the input list against the expected number,
 %% which is typically the sequence `1..N'
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec check_numbers([{cell_group(), [integer()]}], [integer()]) ->
-          ok | {not_ok, [{cell_group(), [integer()]}]}.
+-spec check_numbers([{cell_group(), [integer()]}], [integer()]) -> puzzle_check().
 check_numbers(Nums_list, Numbers) ->
     Nums_bad = fun ({_Group, Nums}) -> (Nums--Numbers) =/= [] end,
     case lists:filter(Nums_bad, Nums_list) of
