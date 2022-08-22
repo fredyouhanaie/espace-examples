@@ -61,7 +61,7 @@ read_puzzle(File) ->
             ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>"Bad format"}),
             {error, bad_format};
         {error, Reason} ->
-            ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>Reason}),
+            ?LOG_ERROR(#{func=>?FUNCTION_NAME, file=>File, reason=>file:format_error(Reason)}),
             {error, Reason}
     end.
 
@@ -217,7 +217,7 @@ cols_to_list(Cols_map) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec puzzle_ok(list(), integer(), integer()) -> boolean().
+-spec puzzle_ok(puzzle_list()|puzzle_map(), integer(), integer()) -> boolean().
 puzzle_ok(Puzzle, Box_rows, Box_cols) when is_list(Puzzle) ->
     Order = Box_rows*Box_cols,
     Row_is_good = fun (X) -> is_list(X) andalso length(X) == Order end,

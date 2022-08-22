@@ -19,7 +19,7 @@
 %%--------------------------------------------------------------------
 %% The result of a puzzle/solution check.
 %%
--type(puzzle_check() :: ok | {not_ok, [{tuple(), [integer()]}]}).
+-type(puzzle_check() :: ok | {not_ok, [{cell_group(), [integer()]}]}).
 
 %%--------------------------------------------------------------------
 %% Each cell belongs to three groups: row, column and box.

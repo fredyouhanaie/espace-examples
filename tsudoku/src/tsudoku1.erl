@@ -168,7 +168,8 @@ solve(Puzzle, Box_rows, Box_cols) ->
 
     %% start the collector
     %%
-    espace:worker({fun collector/4, [N_cells, #{}, Box_rows, Box_cols]}).
+    espace:worker({fun collector/4, [N_cells, #{}, Box_rows, Box_cols]}),
+    ok.
 
 %%-------------------------------------------------------------------
 %% @doc Assign the known cell numbers to the cells.
