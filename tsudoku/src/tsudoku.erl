@@ -31,12 +31,13 @@ main(Args) ->
     logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
 
     ?LOG_DEBUG(#{func => ?FUNCTION_NAME, msg => "startup", args => Args} ),
+
     case getopt:parse(?Opt_specs, Args) of
         {error, {Reason, Data}} ->
             ?LOG_DEBUG(#{func => ?FUNCTION_NAME,
                          reason => Reason,
                          data => Data}),
-            getopt:usage(?Opt_specs, "mcscripts");
+            usage();
 
         {ok, {Parsed, Rest}} ->
             ?LOG_DEBUG(#{func => ?FUNCTION_NAME,
@@ -63,8 +64,54 @@ process_args(Opts, Args) ->
     logger:set_primary_config(level, proplists:get_value(loglevel, Opts)),
 
     ?Process_opt(version, io:format("Version ~p.~n", [?Version])),
-    ?Process_opt(help,    getopt:usage(?Opt_specs, atom_to_list(?MODULE))),
+    ?Process_opt(help,    usage()),
 
+    process_command(Args),
+    ok.
+
+%%--------------------------------------------------------------------
+
+usage() ->
+    getopt:usage(?Opt_specs, atom_to_list(?MODULE), "command ...",
+                 [ {"command", "command to execute, e.g. solve, check, ..."} ]).
+
+%%--------------------------------------------------------------------
+
+process_command([]) ->
+    ok;
+
+process_command([Cmd|Args]) ->
+    do_command(list_to_atom(Cmd), Args).
+
+%%--------------------------------------------------------------------
+
+do_command(solve, Args) ->
+    do_solve(Args);
+
+do_command(check, Args) ->
+    do_check(Args);
+
+do_command(C, A) ->
+    ?LOG_ERROR("command ~p is undefined, args=~p.~n", [C, A]).
+
+%%--------------------------------------------------------------------
+
+do_solve([File]) ->
+    case tsudoku1:solve_file(File) of
+        ok ->
+            {[{ok, Solution}], _} = espace:rd({done, '$1'}),
+            io:format("~p~n", [Solution]);
+        _ ->
+            ?LOG_ERROR("solve: There was a problem")
+    end;
+
+do_solve([]) ->
+    ?LOG_ERROR("solve: A single filename is expected").
+
+
+%%--------------------------------------------------------------------
+
+do_check(_Args) ->
     ok.
 
 %%--------------------------------------------------------------------
