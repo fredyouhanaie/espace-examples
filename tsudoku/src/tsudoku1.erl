@@ -321,7 +321,7 @@ cell(Row, Col, Numbers) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec out_cell(integer(), integer(), {integer(), integer(), integer()}) -> ok.
+-spec out_cell(integer(), integer(), {integer(), integer(), integer()}) -> done.
 out_cell(Row, Col, Msg) ->
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row=>Row, col=>Col, msg=>Msg}),
     espace:out({cell, Row, Col, Msg}).
