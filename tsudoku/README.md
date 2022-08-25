@@ -27,7 +27,17 @@ Further modules will provide more complex solvers.
     $ rebar3 dialyzer
     $ rebar3 eunit
     $ rebar3 edoc
+
     $ rebar3 shell
+    > tsudoku1:solve_file("test/puzzle_4x4_1.dat").
+    > espace:rdp({done, '$1'}). %% may return nomatch, if solution not found (yet)
+    > espace:stop(). %% required before another run of the solver
+
+There is also an `escript` to do everything from command line:
+
+    $ rebar3 esciptize
+    $ ./_build/default/bin/tsudoku --help
+    $ ./_build/default/bin/tsudoku solve test/puzzle_4x4_1.dat
 
 ## Documentation
 
