@@ -15,7 +15,7 @@
 %%%-------------------------------------------------------------------
 -module(tsudoku_lib).
 
--export([check_solution/3]).
+-export([check_solution/3, check_puzzle/3]).
 -export([box_of/4, puzzle_to_list/1]).
 
 -export([read_puzzle/1, puzzle_ok/3]).
@@ -229,5 +229,72 @@ puzzle_ok(Puzzle, Box_rows, Box_cols) when is_map(Puzzle) ->
     Within_range = fun (X) -> X >= 0 andalso X < NN end,
     Key_is_good = fun ({R, C}) ->  Within_range(R) andalso Within_range(C) end,
     lists:all(Key_is_good, maps:keys(Puzzle)).
+
+%%--------------------------------------------------------------------
+
+-spec puzzle_group_ok([integer()]) -> boolean().
+puzzle_group_ok(Group) ->
+    Nums = lists:seq(0, length(Group)),
+    G_N = Group--Nums,
+    (G_N == []) orelse (lists:uniq(G_N) == [0]).
+
+%%--------------------------------------------------------------------
+
+-spec puzzle_row_ok(puzzle_map()|puzzle_list(), integer()) -> boolean().
+puzzle_row_ok(Puzzle, Row) when is_list(Puzzle) ->
+    Nums = lists:nth(Row+1, Puzzle),
+    puzzle_group_ok(Nums);
+
+puzzle_row_ok(Puzzle, Row) when is_map(Puzzle) ->
+    Filter = fun ({R, _C}, _Num) -> R == Row;
+                 (_, _) -> false
+             end,
+    Nums = maps:values(maps:filter(Filter, Puzzle)),
+    puzzle_group_ok(Nums).
+
+%%--------------------------------------------------------------------
+
+-spec puzzle_col_ok(puzzle_map()|puzzle_list(), integer()) -> boolean().
+puzzle_col_ok(Puzzle, Col) when is_list(Puzzle) ->
+    Nums = [ lists:nth(Col+1, Row) || Row <- Puzzle ],
+    puzzle_group_ok(Nums);
+
+puzzle_col_ok(Puzzle, Col) when is_map(Puzzle) ->
+    Filter = fun ({_R, C}, _Num) -> C == Col;
+                 (_, _) -> false
+             end,
+    Nums = maps:values(maps:filter(Filter, Puzzle)),
+    puzzle_group_ok(Nums).
+
+%%--------------------------------------------------------------------
+
+-spec puzzle_box_ok(puzzle_map()|puzzle_list(), integer(), integer(), integer(), integer()) -> boolean().
+puzzle_box_ok(Puzzle, Row_base, Col_base, Box_rows, Box_cols) when is_list(Puzzle) ->
+    %% extract the rows of box
+    Rows = lists:sublist(Puzzle, Row_base+1, Box_rows),
+    %% extract the cols of the extracted rows
+    Cols = [ lists:sublist(RR, Col_base+1, Box_cols) || RR <- Rows ],
+    Nums = lists:flatten(Cols),
+    puzzle_group_ok(Nums);
+
+puzzle_box_ok(Puzzle, Row_base, Col_base, Box_rows, Box_cols) when is_map(Puzzle) ->
+    Box_coords = [ {R, C} || R <- lists:seq(Row_base+1, Row_base+Box_rows),
+                             C <- lists:seq(Col_base+1, Col_base+Box_cols) ],
+    Nums = [ maps:get({R,C}, Puzzle, 0) || {R,C} <- Box_coords ],
+    puzzle_group_ok(Nums).
+
+%%--------------------------------------------------------------------
+
+-spec check_puzzle(puzzle_map()|puzzle_list(), integer(), integer()) -> boolean().
+check_puzzle(Puzzle, Box_rows, Box_cols) ->
+    NN = Box_rows*Box_cols,
+    Nums = lists:seq(0, NN-1),
+    True = fun (X) -> X end,
+    Row_ok_all = lists:all(True, [puzzle_row_ok(Puzzle, R) || R <- Nums ]),
+    Col_ok_all = lists:all(True, [puzzle_col_ok(Puzzle, C) || C <- Nums ]),
+    Box_ok_all = lists:all(True, [puzzle_box_ok(Puzzle, R, C, Box_rows, Box_cols) ||
+                                     R <- lists:seq(0, Box_cols-1, Box_rows),
+                                     C <- lists:seq(0, Box_rows-1, Box_cols)]),
+    (Row_ok_all andalso Col_ok_all andalso Box_ok_all).
 
 %%--------------------------------------------------------------------

@@ -68,3 +68,25 @@ puzzle_ok_4_test() ->
     ?assertNot(tsudoku_lib:puzzle_ok(Puzzle, Box_rows, Box_cols)).
 
 %%--------------------------------------------------------------------
+
+puzzle_check_test_() ->
+    [{"puzzle 4x4 1",   check_puzzle_good("test/puzzle_4x4_1.dat")},
+     {"puzzle 4x4 2",   check_puzzle_good("test/puzzle_4x4_2.dat")},
+     {"puzzle 6x6 1",   check_puzzle_bad("test/puzzle_6x6_1.dat")},
+     {"puzzle 6x6 2",   check_puzzle_good("test/puzzle_6x6_2.dat")},
+     {"puzzle 6x6 3",   check_puzzle_good("test/puzzle_6x6_3.dat")}
+    ].
+
+%%--------------------------------------------------------------------
+
+check_puzzle_good(Puzzle_file) ->
+    {{Box_rows, Box_cols}, Puzzle} = tsudoku_lib:read_puzzle(Puzzle_file),
+     ?_assert(tsudoku_lib:check_puzzle(Puzzle, Box_rows, Box_cols)).
+
+%%--------------------------------------------------------------------
+
+check_puzzle_bad(Puzzle_file) ->
+    {{Box_rows, Box_cols}, Puzzle} = tsudoku_lib:read_puzzle(Puzzle_file),
+     ?_assertNot(tsudoku_lib:check_puzzle(Puzzle, Box_rows, Box_cols)).
+
+%%--------------------------------------------------------------------
