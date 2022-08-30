@@ -56,27 +56,28 @@ main(Args) ->
 
 -define(Process_opt(Opt, Action),
         case (proplists:get_value(Opt, Opts)) of
-            true -> Action;
-            _    -> ok
+            true -> Action, true;
+            _    -> false
         end).
 
+-spec process_args(proplists:proplist(), list()) -> ok|error.
 process_args(Opts, Args) ->
     logger:set_primary_config(level, proplists:get_value(loglevel, Opts)),
 
-    ?Process_opt(version, io:format("Version ~p.~n", [?Version])),
-    ?Process_opt(help,    usage()),
-
-    process_command(Args),
-    ok.
+    ?Process_opt(version, io:format("Version ~p.~n", [?Version]))
+        orelse ?Process_opt(help,    usage())
+        orelse process_command(Args).
 
 %%--------------------------------------------------------------------
 
 usage() ->
+    io:format("Version ~p.~n", [?Version]),
     getopt:usage(?Opt_specs, atom_to_list(?MODULE), "command ...",
                  [ {"command", "command to execute, e.g. solve, check, ..."} ]).
 
 %%--------------------------------------------------------------------
 
+-spec process_command(list()) -> ok|error.
 process_command([]) ->
     ok;
 
