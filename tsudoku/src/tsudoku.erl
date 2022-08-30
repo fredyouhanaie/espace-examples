@@ -117,7 +117,23 @@ do_solve(_) ->
 
 %%--------------------------------------------------------------------
 
-do_check(_Args) ->
-    ok.
+-spec do_check(list()) -> ok|error.
+do_check([File]) ->
+    case tsudoku_lib:read_puzzle(File) of
+        {{Box_rows, Box_cols}, Puzzle} ->
+            Check = case tsudoku_lib:check_puzzle(Puzzle, Box_rows, Box_cols) of
+                        true -> "Good";
+                        false -> "BAD"
+                    end,
+            io:format("puzzle ~p is ~p.~n", [File, Check]),
+            ok;
+        _ ->
+            ?LOG_ERROR("check: There was a problem"),
+            error
+    end;
+
+do_check(_) ->
+    ?LOG_ERROR("check: A single filename is expected"),
+    error.
 
 %%--------------------------------------------------------------------
