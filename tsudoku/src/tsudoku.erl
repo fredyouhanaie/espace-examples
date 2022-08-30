@@ -85,6 +85,7 @@ process_command([Cmd|Args]) ->
 
 %%--------------------------------------------------------------------
 
+-spec do_command(atom(), list()) -> ok|error.
 do_command(solve, Args) ->
     do_solve(Args);
 
@@ -92,7 +93,8 @@ do_command(check, Args) ->
     do_check(Args);
 
 do_command(C, A) ->
-    ?LOG_ERROR("command ~p is undefined, args=~p.~n", [C, A]).
+    ?LOG_ERROR("command ~p is undefined, args=~p.~n", [C, A]),
+    error.
 
 %%--------------------------------------------------------------------
 
@@ -100,13 +102,16 @@ do_solve([File]) ->
     case tsudoku1:solve_file(File) of
         ok ->
             {[{ok, Solution}], _} = espace:rd({done, '$1'}),
-            io:format("~p~n", [Solution]);
+            io:format("~p~n", [Solution]),
+            ok;
         _ ->
-            ?LOG_ERROR("solve: There was a problem")
+            ?LOG_ERROR("solve: There was a problem"),
+            error
     end;
 
-do_solve([]) ->
-    ?LOG_ERROR("solve: A single filename is expected").
+do_solve(_) ->
+    ?LOG_ERROR("solve: A single filename is expected"),
+    error.
 
 
 %%--------------------------------------------------------------------
