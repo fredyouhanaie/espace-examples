@@ -13,30 +13,42 @@
 %%--------------------------------------------------------------------
 
 -define(Bad_file_1, "test/non-existent-file"). %% this files should never exist!
-read_1_test() ->
-    ?assertEqual({error,enoent}, tsudoku2:get_puzzle_file(?Bad_file_1)),
-    espace:stop().
+-define(Puzzle_bad_1, "test/puzzle_bad_1.dat").
 
 %%--------------------------------------------------------------------
 
--define(Puzzle_bad_1, "test/puzzle_bad_1.dat").
-read_2_test() ->
-    ?assertEqual({error,bad_format}, tsudoku2:get_puzzle_file(?Puzzle_bad_1)),
-    espace:stop().
+setup() ->
+    logger:set_primary_config(#{level => error}).
+
+cleanup(_) ->
+    ok.
+
+%%--------------------------------------------------------------------
+
+get_puzzle_test_() ->
+    {"Get puzzle file",
+     {setup, fun setup/0, fun cleanup/1,
+      [ {"no file",    puzzle_get_file(?Bad_file_1, {error,enoent})},
+        {"bad format", puzzle_get_file(?Puzzle_bad_1, {error,bad_format})}
+      ]}}.
+
+%%--------------------------------------------------------------------
+
+puzzle_get_file(File, Exp_result) ->
+    Act_result = tsudoku2:get_puzzle_file(File),
+    espace:stop(),
+    ?_assertEqual(Exp_result, Act_result).
 
 %%--------------------------------------------------------------------
 
 puzzle_check_test_() ->
     {"Check puzzle",
-     {setup,
-      fun () -> logger:set_primary_config(level, critical) end,
-      fun (_) -> ok end,
-      [
-       {"puzzle 4x4 1", check_puzzle_good("test/puzzle_4x4_1.dat", true)},
-       {"puzzle 4x4 2", check_puzzle_good("test/puzzle_4x4_2.dat", true)},
-       {"puzzle 6x6 1", check_puzzle_good("test/puzzle_6x6_1.dat", false)},
-       {"puzzle 6x6 2", check_puzzle_good("test/puzzle_6x6_2.dat", true)},
-       {"puzzle 6x6 3", check_puzzle_good("test/puzzle_6x6_3.dat", true)}
+     {setup, fun setup/0, fun cleanup/1,
+      [ {"puzzle 4x4 1", check_puzzle_good("test/puzzle_4x4_1.dat", true)},
+        {"puzzle 4x4 2", check_puzzle_good("test/puzzle_4x4_2.dat", true)},
+        {"puzzle 6x6 1", check_puzzle_good("test/puzzle_6x6_1.dat", false)},
+        {"puzzle 6x6 2", check_puzzle_good("test/puzzle_6x6_2.dat", true)},
+        {"puzzle 6x6 3", check_puzzle_good("test/puzzle_6x6_3.dat", true)}
       ]}}.
 
 %%--------------------------------------------------------------------
