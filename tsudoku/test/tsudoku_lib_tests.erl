@@ -47,12 +47,10 @@
 
 puzzle_ok_test_() ->
     {"Puzzle OK",
-     {setup,
-      fun () -> logger:set_primary_config(#{level => critical}) end,
-      fun (_) -> ok end,
+     {setup, fun setup/0, fun cleanup/1,
       [ {"puzzle 1 map good",   check_puzzle_OK(?Puzzle_1_map_good, true)},
         {"puzzle 2 map bad",    check_puzzle_OK(?Puzzle_2_map_bad,  false)},
-        {"puzzle 3 list goodd", check_puzzle_OK(?Puzzle_3_lol_good, true)},
+        {"puzzle 3 list good",  check_puzzle_OK(?Puzzle_3_lol_good, true)},
         {"puzzle 4 list bad",   check_puzzle_OK(?Puzzle_4_lol_bad,  false)}
       ]}}.
 
@@ -64,7 +62,7 @@ check_puzzle_OK({{Box_rows, Box_cols}, Puzzle}, OK) ->
 %%--------------------------------------------------------------------
 
 setup() ->
-    logger:set_primary_config(#{level => error}).
+    logger:set_primary_config(#{level => critical}).
 
 cleanup(_) ->
     ok.

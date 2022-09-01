@@ -18,7 +18,7 @@
 %%--------------------------------------------------------------------
 
 setup() ->
-    logger:set_primary_config(#{level => error}).
+    logger:set_primary_config(#{level => critical}).
 
 cleanup(_) ->
     ok.
