@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 20 Aug 2022 by Fred Youhanaie <fyrlang@anydata.co.uk>
 %%%-------------------------------------------------------------------
--module(tsudoku_lib_test).
+-module(tsudoku_lib_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
