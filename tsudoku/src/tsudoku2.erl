@@ -15,7 +15,7 @@
 %%%-------------------------------------------------------------------
 -module(tsudoku2).
 
--export([check_puzzle/0, get_puzzle_file/1]).
+-export([check_puzzle/0, get_puzzle_file/1, check_puzzle/1]).
 
 -include_lib("kernel/include/logger.hrl").
 -include_lib("tsudoku.hrl").
@@ -44,6 +44,20 @@ get_puzzle_file(File) ->
 
         Error = {error, _} ->
             Error
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc Read and check the puzzle in `File'.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec check_puzzle(file:name_all()) -> boolean()|error.
+check_puzzle(File) ->
+    case get_puzzle_file(File) of
+        ok ->
+            check_puzzle();
+        _ ->
+            error
     end.
 
 %%--------------------------------------------------------------------
