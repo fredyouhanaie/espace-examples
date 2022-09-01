@@ -27,25 +27,23 @@ read_2_test() ->
 %%--------------------------------------------------------------------
 
 puzzle_check_test_() ->
-    [{"puzzle 4x4 1",   check_puzzle_good("test/puzzle_4x4_1.dat")},
-     {"puzzle 4x4 2",   check_puzzle_good("test/puzzle_4x4_2.dat")},
-     {"puzzle 6x6 1",   check_puzzle_bad("test/puzzle_6x6_1.dat")},
-     {"puzzle 6x6 2",   check_puzzle_good("test/puzzle_6x6_2.dat")},
-     {"puzzle 6x6 3",   check_puzzle_good("test/puzzle_6x6_3.dat")}
-    ].
+    {"Check puzzle",
+     {setup,
+      fun () -> logger:set_primary_config(level, critical) end,
+      fun (_) -> ok end,
+      [
+       {"puzzle 4x4 1", check_puzzle_good("test/puzzle_4x4_1.dat", true)},
+       {"puzzle 4x4 2", check_puzzle_good("test/puzzle_4x4_2.dat", true)},
+       {"puzzle 6x6 1", check_puzzle_good("test/puzzle_6x6_1.dat", false)},
+       {"puzzle 6x6 2", check_puzzle_good("test/puzzle_6x6_2.dat", true)},
+       {"puzzle 6x6 3", check_puzzle_good("test/puzzle_6x6_3.dat", true)}
+      ]}}.
 
 %%--------------------------------------------------------------------
 
-check_puzzle_good(Puzzle_file) ->
+check_puzzle_good(Puzzle_file, Good) ->
+    Puzzle_check = tsudoku2:check_puzzle(Puzzle_file),
     espace:stop(),
-    ok = tsudoku2:get_puzzle_file(Puzzle_file),
-    ?_assert(tsudoku2:check_puzzle()).
-
-%%--------------------------------------------------------------------
-
-check_puzzle_bad(Puzzle_file) ->
-    espace:stop(),
-    ok = tsudoku2:get_puzzle_file(Puzzle_file),
-    ?_assertNot(tsudoku2:check_puzzle()).
+    ?_assertEqual(Good, Puzzle_check).
 
 %%--------------------------------------------------------------------
