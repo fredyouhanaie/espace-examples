@@ -18,6 +18,9 @@ The current implementation include two main modules:
 * `tsudoku1` is the first of the solver modules. It implements the
   simplest method of solving the puzzle.
 
+* `tsudoku2` is an alternative solver that keeps all the cell data in the tuple
+  space. In contrast to `tsudoku` where each cell worker maintains its own data.
+
 Further modules will provide more complex solvers.
 
 ## Trying it out
