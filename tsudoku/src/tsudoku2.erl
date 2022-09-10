@@ -114,14 +114,14 @@ check_puzzle() ->
 -spec puzzle_row_ok(integer(), integer()) -> boolean().
 puzzle_row_ok(Row, N_cols) ->
     Nums = [ get_cell(Row, Col) || Col <- lists:seq(0, N_cols-1) ],
-    puzzle_group_ok(Nums, N_cols).
+    tsudoku_lib:puzzle_group_ok(Nums).
 
 %%--------------------------------------------------------------------
 
 -spec puzzle_col_ok(integer(), integer()) -> boolean().
 puzzle_col_ok(Col, N_rows) ->
     Nums = [ get_cell(Row, Col) || Row <- lists:seq(0, N_rows-1) ],
-    puzzle_group_ok(Nums, N_rows).
+    tsudoku_lib:puzzle_group_ok(Nums).
 
 %%--------------------------------------------------------------------
 
@@ -130,7 +130,7 @@ puzzle_box_ok(Row_base, Col_base, Box_rows, Box_cols) ->
     R_list = lists:seq(Row_base, Row_base+Box_rows-1),
     C_list = lists:seq(Col_base, Col_base+Box_cols-1),
     Nums = [ get_cell(Row, Col) || Row <- R_list, Col <- C_list ],
-    puzzle_group_ok(Nums, Box_rows*Box_cols).
+    tsudoku_lib:puzzle_group_ok(Nums).
               
 %%--------------------------------------------------------------------
 
@@ -138,18 +138,4 @@ get_cell(Row, Col) ->
     {[Num], _} = espace:rd({cell, Row, Col, '$1'}),
     Num.
     
-%%--------------------------------------------------------------------
-%% @doc Check group of numbers in a single row/column/box of puzzle
-%%
-%% The group should only contain numbers `0..NN', no duplicates other
-%% than `0's.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec puzzle_group_ok([integer()], integer()) -> boolean().
-puzzle_group_ok(Group, NN) ->
-    Nums = lists:seq(0, NN),
-    G_N = Group--Nums,
-    (length(Group) == NN) andalso (G_N == []) orelse (lists:uniq(G_N) == [0]).
-
 %%--------------------------------------------------------------------

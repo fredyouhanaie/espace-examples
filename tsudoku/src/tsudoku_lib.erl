@@ -18,7 +18,8 @@
 -export([check_solution/3, check_puzzle/3]).
 -export([box_of/4, puzzle_to_list/1]).
 
--export([read_puzzle/1, puzzle_ok/3]).
+
+-export([read_puzzle/1, puzzle_ok/3, puzzle_group_ok/1]).
 
 %%--------------------------------------------------------------------
 
@@ -231,7 +232,13 @@ puzzle_ok(Puzzle, Box_rows, Box_cols) when is_map(Puzzle) ->
     lists:all(Key_is_good, maps:keys(Puzzle)).
 
 %%--------------------------------------------------------------------
-
+%% @doc Check group of numbers in a single row/column/box of puzzle
+%%
+%% The group should only contain numbers `0..length(Group)', no
+%% duplicates other than `0's.
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec puzzle_group_ok([integer()]) -> boolean().
 puzzle_group_ok(Group) ->
     Nums = lists:seq(0, length(Group)),
