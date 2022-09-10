@@ -91,7 +91,7 @@ out_puzzle(Puzzle, _NN) when is_list(Puzzle) ->
 %%--------------------------------------------------------------------
 %% @doc Check a puzzle for duplicates.
 %%
-%% We chack all the rows, columns and boxes, looking for duplicate
+%% We check all the rows, columns and boxes, looking for duplicate
 %% values, except for `0' values.
 %%
 %% @end
@@ -110,21 +110,39 @@ check_puzzle() ->
     (Row_ok_all andalso Col_ok_all andalso Box_ok_all).
 
 %%--------------------------------------------------------------------
-
+%% @doc check a given row of puzzle
+%%
+%% The elements of the row are collected from the tuple space and
+%% checked.
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec puzzle_row_ok(integer(), integer()) -> boolean().
 puzzle_row_ok(Row, N_cols) ->
     Nums = [ get_cell(Row, Col) || Col <- lists:seq(0, N_cols-1) ],
     tsudoku_lib:puzzle_group_ok(Nums).
 
 %%--------------------------------------------------------------------
-
+%% @doc check a given column of puzzle
+%%
+%% The elements of the column are collected from the tuple space and
+%% checked.
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec puzzle_col_ok(integer(), integer()) -> boolean().
 puzzle_col_ok(Col, N_rows) ->
     Nums = [ get_cell(Row, Col) || Row <- lists:seq(0, N_rows-1) ],
     tsudoku_lib:puzzle_group_ok(Nums).
 
 %%--------------------------------------------------------------------
-
+%% @doc check a given box of puzzle
+%%
+%% The elements of the box are collected from the tuple space and
+%% checked.
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec puzzle_box_ok(integer(), integer(), integer(), integer()) -> boolean().
 puzzle_box_ok(Row_base, Col_base, Box_rows, Box_cols) ->
     R_list = lists:seq(Row_base, Row_base+Box_rows-1),
@@ -133,7 +151,15 @@ puzzle_box_ok(Row_base, Col_base, Box_rows, Box_cols) ->
     tsudoku_lib:puzzle_group_ok(Nums).
               
 %%--------------------------------------------------------------------
-
+%% @doc retrurn the contents of a single cell from the tuple space
+%%
+%% We expect the `{cell, Row, Col}' to be present in the tuple
+%% space. Otherwise, the function will wait indefinitely until the
+%% tuple arrives.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec get_cell(integer(), integer()) -> integer().
 get_cell(Row, Col) ->
     {[Num], _} = espace:rd({cell, Row, Col, '$1'}),
     Num.
