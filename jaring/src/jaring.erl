@@ -5,16 +5,20 @@
 %%%
 %%% The `espace' based implementation of the `ring bencmark' from Joe's book.
 %%%
-%%% The benchmark is performed with `N+1' process. The first node and `N' relay
-%%% nodes. The nodes communicate in a unidirectional ring formation, where node
-%%% `X' forwards messages to node `X+1'. The last node forwards messages to node
-%%% `0'.
+%%% The benchmark is performed with `N+1' worker processes, the first node (node
+%%% `0') and `N' relay nodes (`1..N'). The nodes communicate in a unidirectional
+%%% ring formation, where node `X' forwards messages to node `X+1'. The last
+%%% node forwards the messages to node `0'.
 %%%
-%%% All communication between nodes is carried out via the `espace' tuple space.
-%%% A send is just an `out' operation, while a receive is an `in' operation.
+%%% Each message being sent through the ring is a single integer. Its value
+%%% starts from `M' and is decremented before each new round. The last message
+%%% to go around has value `1'.
 %%%
-%%% Each node worker is given a node number, a next node number, and the message
-%%% number to wait for. The node waits for
+%%% All communication between the nodes is carried out via the `espace' tuple
+%%% space. A `send' is an `out' operation with the destination node number as
+%%% the first element, while a `receive' is an `in' operation. Node workers
+%%% receive messages by waiting for tuples with their own node number, i.e.
+%%% `{Node_num, Msg}'.
 %%%
 %%% @end
 %%% Created :  2021-12-03 by Fred Youhanaie <fyrlang@anydata.co.uk>
