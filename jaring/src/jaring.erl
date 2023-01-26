@@ -36,14 +36,28 @@
 -define(Log_level, error).
 
 %%--------------------------------------------------------------------
-%% start a run with the default parameters
+%% @doc start a run with the default parameters.
 %%
+%% See `start/2' for details.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec start() -> map().
 start() ->
     start(?Nodes, ?Messages).
 
 %%--------------------------------------------------------------------
-%% start a run with the supplied paramater
+%% @doc start a run with the supplied paramater.
 %%
+%% Kick off `N+1' worker processes on the default `espace' instance. The
+%% instance is only live during the run.
+%%
+%% The function returns a map of performance values, including total time and
+%% time/message.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec start(integer(), integer()) -> map().
 start(Nodes, Messages) ->
     logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
     logger:set_primary_config(level, ?Log_level),
