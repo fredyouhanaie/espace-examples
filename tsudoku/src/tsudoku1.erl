@@ -109,6 +109,8 @@
 -include_lib("kernel/include/logger.hrl").
 -include_lib("tsudoku.hrl").
 
+-include_lib("tsudoku1.hrl").
+
 %%-------------------------------------------------------------------
 
 -define(Log_level, warning).
@@ -222,7 +224,7 @@ assign_rows(Row_cells, Row_num) ->
 %%-------------------------------------------------------------------
 -spec drain_solved() -> ok.
 drain_solved() ->
-    case espace:inp({solved, '_', '_', '_'}) of
+    case ?INP(solved) of
         nomatch ->
             ok;
         {[], Tuple} ->
@@ -243,7 +245,7 @@ drain_solved() ->
 %%-------------------------------------------------------------------
 -spec drain_cells() -> ok.
 drain_cells() ->
-    case espace:inp({cell, '_', '_', '_'}) of
+    case ?INP(cell) of
         nomatch ->
             ok;
         {[], _Tuple} ->
@@ -270,14 +272,14 @@ collector(0, Solution, Box_rows, Box_cols) ->
     drain_solved(),
     drain_cells(),
     Solution_ok = tsudoku_lib:check_solution(Solution, Box_rows, Box_cols),
-    espace:out({done, {Solution_ok, tsudoku_lib:puzzle_to_list(Solution)}});
+    ?OUT(done, solution={Solution_ok, tsudoku_lib:puzzle_to_list(Solution)});
 
 collector(N_solutions, Solution, Box_rows, Box_cols) ->
-    case espace:in({solved, '$1', '$2', '$3'}) of
+    case ?IN(solved, row='$1', col='$2', num='$3') of
         quit ->
             ok;
         {[Row, Col, Num], _} ->
-            espace:out({cellcast, Row, Col, Num}),
+            ?OUT(cellcast, row=Row, col=Col, num=Num),
             collector(N_solutions-1, maps:put({Row, Col}, Num, Solution), Box_rows, Box_cols)
     end.
 
@@ -300,17 +302,17 @@ collector(N_solutions, Solution, Box_rows, Box_cols) ->
 -spec cell(integer(), integer(), [integer()]) -> ok.
 cell(Row, Col, [Num]) when is_integer(Num) -> %% only one number left, we're done :-)
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row_col=>{Row, Col}, num=>Num}),
-    espace:out({solved, Row, Col, Num});
+    ?OUT(solved, row=Row, col=Col, num=Num);
 
 cell(Row, Col, Numbers) ->
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row_col=>{Row, Col}, numbers=>Numbers}),
-    case espace:in({cell, Row, Col, '$3'}) of
+    case ?IN(cell, row=Row, col=Col, msg='$3') of
         quit ->
             ok;
         {[Msg], _} ->
             case Msg of
                 {Row, Col, Num} -> %% this is us, we're assigned a number
-                    espace:out({solved, Row, Col, Num});
+                    ?OUT(solved, row=Row, col=Col, num=Num);
                 {_RR, _CC, Num} -> %% it must be one of our buddies
                     cell(Row, Col, Numbers -- [Num]) %% take it out of our list of candidates
             end
@@ -324,7 +326,7 @@ cell(Row, Col, Numbers) ->
 -spec out_cell(integer(), integer(), {integer(), integer(), integer()}) -> done.
 out_cell(Row, Col, Msg) ->
     ?LOG_NOTICE(#{func=>?FUNCTION_NAME, row=>Row, col=>Col, msg=>Msg}),
-    espace:out({cell, Row, Col, Msg}).
+    ?OUT(cell, row=Row, col=Col, msg=Msg).
 
 %%-------------------------------------------------------------------
 %% @doc Relay a cell message to the row, column and box of cell.
@@ -336,14 +338,14 @@ out_cell(Row, Col, Msg) ->
 %%-------------------------------------------------------------------
 -spec relay_cellcast() -> ok.
 relay_cellcast() ->
-    case espace:in({cellcast, '$1', '$2', '$3'}) of
+    case ?IN(cellcast, row='$1', col='$2', num='$3') of
         quit ->
             ok;
         {[Row, Col, Num], _} ->
             Msg = {Row, Col, Num},
-            espace:out({rowcast, Row, Msg}),
-            espace:out({colcast, Col, Msg}),
-            espace:out({boxcast, Row, Col, Msg}),
+            ?OUT(rowcast, row=Row,          msg=Msg),
+            ?OUT(colcast,          col=Col, msg=Msg),
+            ?OUT(boxcast, row=Row, col=Col, msg=Msg),
             relay_cellcast()
     end.
 
@@ -357,7 +359,7 @@ relay_cellcast() ->
 %%-------------------------------------------------------------------
 -spec relay_rowcast(integer()) -> ok.
 relay_rowcast(N_cols) ->
-    case espace:in({rowcast, '$1', '$2'}) of
+    case ?IN(rowcast, row='$1', msg='$2') of
         quit ->
             ok;
         {[Row, Msg], _} ->
@@ -376,7 +378,7 @@ relay_rowcast(N_cols) ->
 %%-------------------------------------------------------------------
 -spec relay_colcast(integer()) -> ok.
 relay_colcast(N_rows) ->
-    case espace:in({colcast, '$1', '$2'}) of
+    case ?IN(colcast, col='$1', msg='$2') of
         quit ->
             ok;
         {[Col, Msg], _} ->
@@ -399,7 +401,7 @@ relay_colcast(N_rows) ->
 %%-------------------------------------------------------------------
 -spec relay_boxcast(integer(), integer(), map()) -> ok.
 relay_boxcast(Box_rows, Box_cols, Box_map) ->
-    case espace:in({boxcast, '$1', '$2', '$3'}) of
+    case ?IN(boxcast, row='$1', col='$2', msg='$3') of
         quit ->
             ok;
         {[Row, Col, Msg], _} ->
