@@ -30,7 +30,6 @@
 %%--------------------------------------------------------------------
 
 -include_lib("kernel/include/logger.hrl").
--include_lib("eunit/include/eunit.hrl").
 
 %%--------------------------------------------------------------------
 %% default parameters
@@ -151,8 +150,14 @@ relay_node(Me, Next, Msg_num) when Msg_num > 0 ->
 %% Local Tests
 %%--------------------------------------------------------------------
 
+-ifdef(EUNIT).
+
+-include_lib("eunit/include/eunit.hrl").
+
 bench_0_test() -> start().
 bench_1_test() -> start(10, 10).
 bench_2_test() -> start(100, 100).
+
+-endif.
 
 %%--------------------------------------------------------------------
