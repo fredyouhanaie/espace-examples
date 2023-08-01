@@ -17,11 +17,22 @@
 %%% @end
 %%% Created : 15 Oct 2019 by Fred Youhanaie <fyrlang@anydata.co.uk>
 %%%-------------------------------------------------------------------
-
 -module(barrier_0).
 
+-export([start/0, stop/0]).
 -export([sync/3, reset/1, run_N/2]).
 
+%%--------------------------------------------------------------------
+
+start() ->
+    logger:set_primary_config(#{level => notice}),
+    logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
+    espace:start().
+
+%%--------------------------------------------------------------------
+
+stop() ->
+    espace:stop().
 
 %%--------------------------------------------------------------------
 %% @doc Sync function to be called by each process.
