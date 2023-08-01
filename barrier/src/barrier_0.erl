@@ -24,6 +24,10 @@
 
 %%--------------------------------------------------------------------
 
+-include_lib("kernel/include/logger.hrl").
+
+%%--------------------------------------------------------------------
+
 start() ->
     logger:set_primary_config(#{level => notice}),
     logger:set_handler_config(default, formatter, {logger_formatter, #{}}),
@@ -53,11 +57,10 @@ stop() ->
 %%--------------------------------------------------------------------
 -spec sync(term(), integer(), integer()) -> ok.
 sync(Tag, My_proc, N_procs) ->
-    logger:notice("Proc ~p: sync started", [My_proc]),
+    ?LOG_NOTICE("Proc ~p: sync started", [My_proc]),
     Steps = trunc(math:ceil(math:log2(N_procs))),
     sync(Tag, My_proc, N_procs, Steps, 1),
-    logger:notice("Proc ~p: sync completed", [My_proc]).
-
+    ?LOG_NOTICE("Proc ~p: sync completed", [My_proc]).
 
 %%--------------------------------------------------------------------
 %% @doc Wait for each of the `N_procs' buddies to become ready.
@@ -135,7 +138,9 @@ run_N(Tag, N_procs) ->
 %%--------------------------------------------------------------------
 -spec run_1(term(), integer(), integer()) -> ok.
 run_1(Tag, Proc_N, N_procs) ->
-    logger:notice("Proc ~p started, pre-sync.", [Proc_N]),
+    ?LOG_NOTICE("Proc ~p started, pre-sync.", [Proc_N]),
     sync(Tag, Proc_N, N_procs),
-    logger:notice("Proc ~p post-sync, stopped", [Proc_N]),
+    ?LOG_NOTICE("Proc ~p post-sync, stopped", [Proc_N]),
     ok.
+
+%%--------------------------------------------------------------------
