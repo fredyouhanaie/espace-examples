@@ -125,10 +125,13 @@ reset(Tag) ->
 -spec run_N(term(), integer()) -> ok.
 run_N(Tag, N_procs) ->
     reset(Tag),
-    F = fun(I) -> espace:eval({done, I, {fun run_1/3, [Tag, I, N_procs]} }) end,
-    lists:foreach(F, lists:seq(0, N_procs-1)),
+    %% kick off the processes
+    [ espace:eval({done, I, {fun run_1/3, [Tag, I, N_procs]} })
+      || I <- lists:seq(0, N_procs-1) ],
+    %% collect the left-over tuples
+    [ espace:in({done, I, ok})
+      || I <- lists:seq(0, N_procs-1) ],
     ok.
-
 
 %%--------------------------------------------------------------------
 %% @doc A single process with rank `Proc_N' to sync with the rest of
