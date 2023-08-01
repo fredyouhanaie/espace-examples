@@ -54,7 +54,6 @@ stop() ->
 -spec sync(term(), integer(), integer()) -> ok.
 sync(Tag, My_proc, N_procs) ->
     logger:notice("Proc ~p: sync started", [My_proc]),
-    espace:out({Tag, My_proc}),
     Steps = trunc(math:ceil(math:log2(N_procs))),
     sync(Tag, My_proc, N_procs, Steps, 1),
     logger:notice("Proc ~p: sync completed", [My_proc]).
@@ -87,13 +86,13 @@ sync(_Tag, _My_proc, _N_procs, 0, _Mask) ->
 sync(Tag, My_proc, N_procs, Steps, Mask) ->
     Buddy = My_proc bxor Mask,
     if
-	Buddy < N_procs ->
-	    espace:rd({Tag, Buddy});
-	true ->
-	    ok
+        Buddy < N_procs ->
+            espace:out({Tag, My_proc, Buddy}),
+            espace:in( {Tag, Buddy,   My_proc});
+        true ->
+            ok
     end,
     sync(Tag, My_proc, N_procs, Steps-1, Mask bsl 1).
-
 
 %%--------------------------------------------------------------------
 %% @doc Reset the barrier for the given `Tag'.
@@ -105,18 +104,17 @@ sync(Tag, My_proc, N_procs, Steps, Mask) ->
 %%--------------------------------------------------------------------
 -spec reset(term()) -> ok.
 reset(Tag) ->
-    case espace:inp({Tag, '_'}) of
-	nomatch ->
-	    ok;
-	_ ->
-	    reset(Tag)
+    case espace:inp({Tag, '_', '_'}) of
+        nomatch ->
+            ok;
+        _ ->
+            reset(Tag)
     end.
-
 
 %%--------------------------------------------------------------------
 %% @doc simple function for testing and troubleshooting.
 %%
-%% Creates `N_procs' `eval's, which in turn will synchronize with the
+%% Creates `N_procs' `eval's, each in turn will synchronize with the
 %% rest.
 %%
 %% @end
