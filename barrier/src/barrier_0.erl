@@ -100,8 +100,8 @@ sync(Tag, My_proc, N_procs, Steps, Mask) ->
 %%--------------------------------------------------------------------
 %% @doc Reset the barrier for the given `Tag'.
 %%
-%% All the `{Tag, Proc_num}' tuples will be removed from the tuple
-%% space.
+%% All the `{Tag, Proc_num, Buddy_num}' tuples will be removed from
+%% the tuple space.
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -120,6 +120,9 @@ reset(Tag) ->
 %% Creates `N_procs' `eval's, each in turn will synchronize with the
 %% rest.
 %%
+%% each `eval' will result in a tuple of the following form in the
+%% tuple space `{done, Proc_num, ok}'.
+%%
 %% @end
 %%--------------------------------------------------------------------
 -spec run_N(term(), integer()) -> ok.
@@ -128,7 +131,7 @@ run_N(Tag, N_procs) ->
     %% kick off the processes
     [ espace:eval({done, I, {fun run_1/3, [Tag, I, N_procs]} })
       || I <- lists:seq(0, N_procs-1) ],
-    %% collect the left-over tuples
+    %% wait for and collect the left-over tuples
     [ espace:in({done, I, ok})
       || I <- lists:seq(0, N_procs-1) ],
     ok.

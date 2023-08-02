@@ -30,7 +30,7 @@ processes are likely to go through multiple barriers, then it would be
 best to use a different `Tag` for each, perhaps something like `{Tag,
 Phase}`.
 
-## barrrier_1
+## barrier_1
 
 In contrast to the butterfly barrier above, we could let each process
 to `out` its _ready_ tuple, followed by waiting for `N-1` tuples from
