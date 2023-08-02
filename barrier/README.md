@@ -30,6 +30,17 @@ processes are likely to go through multiple barriers, then it would be
 best to use a different `Tag` for each, perhaps something like `{Tag,
 Phase}`.
 
+## barrrier_1
+
+In contrast to the butterfly barrier above, we could let each process
+to `out` its _ready_ tuple, followed by waiting for `N-1` tuples from
+the other processes. This will result in `N x (N-1)` read operations,
+which is much higher than the `N x log2(N)` read operations of the
+butterfly barrier.
+
+However, it is being included here to demonstrate and assess the
+extent of the actual performance difference between the two methods.
+
 ## Build and test
 
 As with most Erlang projects, `rebar3` is used for building and
@@ -39,3 +50,5 @@ testing the code:
 	$ rebar3 dialyzer
 	$ rebar3 eunit
 	$ rebar3 edoc
+
+---
