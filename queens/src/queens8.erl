@@ -69,7 +69,6 @@ attacks_one({_R1, C}, {_R2, C}) ->
 attacks_one({R1, C1}, {R2, C2}) ->
     abs(R1-R2) == abs(C1-C2). %% same diagonal?
 
-
 %%--------------------------------------------------------------------
 %% @doc check if the `Queen' can attack any of the queens on `Board'.
 %%
@@ -85,7 +84,6 @@ attacks_any(Queen, Board) ->
               false,
               Board).
                  
-
 %%--------------------------------------------------------------------
 %% @doc Start the processes.
 %%
@@ -97,7 +95,7 @@ attacks_any(Queen, Board) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start() -> ok.
+-spec start() -> done.
 start() ->
     case application:ensure_all_started(espace) of
         {ok, Started} ->
@@ -112,7 +110,6 @@ start() ->
     lists:foreach(Worker, lists:seq(1, ?Num_solvers)),
     espace:out({new, #{}}).
 
-
 %%--------------------------------------------------------------------
 %% @doc Wait for a `new' tuple and process it.
 %%
@@ -123,7 +120,6 @@ worker_solver() ->
     {[Board], _} = espace:in({new, '$1'}),
     check_board(Board),
     worker_solver().
-
 
 %%--------------------------------------------------------------------
 %% @doc Given the positions of queens on a chessboard, generate the
@@ -168,7 +164,6 @@ check_board(Board) ->
             lists:foreach(New_board, Squares_to_check)
     end.
 
-
 %%--------------------------------------------------------------------
 %% @doc Extract the solutions from the tuple space.
 %%
@@ -179,7 +174,6 @@ check_board(Board) ->
 -spec get_solutions() -> list().
 get_solutions() ->
     get_solutions([]).
-
 
 %%--------------------------------------------------------------------
 %% @doc Extract the list of solutions from the tuple space.
@@ -198,7 +192,6 @@ get_solutions(Solutions) ->
             get_solutions([S|Solutions])
     end.
 
-
 %%--------------------------------------------------------------------
 %% @doc If a solution exists in the tuple space, extract and print it.
 %%
@@ -213,7 +206,6 @@ print_solution() ->
             print_board(Board)
     end.
     
-
 %%--------------------------------------------------------------------
 %% @doc Print a solution map as a chessboard.
 %%
@@ -227,7 +219,6 @@ print_board(Board) ->
                   lists:sort(maps:to_list(Board))
                  ),
     print_hline().
-
 
 %%--------------------------------------------------------------------
 %% @doc Print a single row.
@@ -244,7 +235,6 @@ print_row({_, Col}) ->
     print_hline(),
     io:format("|~s~n", [Row]).
 
-
 %%--------------------------------------------------------------------
 %% @doc Print a horizontal line.
 %%
@@ -254,3 +244,5 @@ print_row({_, Col}) ->
 print_hline() ->
     Hline = erlang:list_to_binary(lists:duplicate(?Num_queens, "-+")),
     io:format("+~s~n", [Hline]).
+
+%%--------------------------------------------------------------------
