@@ -36,7 +36,6 @@
 start() ->
     start(5).
 
-
 %%--------------------------------------------------------------------
 %% @doc Start the simulation for `Nphil' philosophers and tail the
 %% events.
@@ -47,7 +46,6 @@ start() ->
 start(Nphil) ->
     dinphil_1:init(Nphil),
     tail(1).
-
 
 %%--------------------------------------------------------------------
 %% @doc read and process the events, starting from the last event.
@@ -67,7 +65,6 @@ tail() ->
 	    tail(Eventnum)
     end.
 
-
 %%--------------------------------------------------------------------
 %% @doc read and process the events, start with `Eventnum'.
 %%
@@ -81,7 +78,6 @@ tail(Eventnum) ->
     {[Num], _} = espace:rd({num, '$1'}),
     Phil_status = lists:duplicate(Num, '...'),
     tail(Eventnum, Phil_status).
-
 
 %%--------------------------------------------------------------------
 %% @doc read an event, and process the events.
@@ -101,3 +97,5 @@ tail(Eventnum, Status) ->
 			     )),
     io:format("~3b ~s~n", [Eventnum, Out_status]),
     tail(Eventnum+1, Status2).
+
+%%--------------------------------------------------------------------

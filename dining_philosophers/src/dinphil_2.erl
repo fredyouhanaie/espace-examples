@@ -21,7 +21,6 @@
 %% API exports
 -export([et/0, start/2, init/1, phil/1]).
 
-
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -49,7 +48,6 @@ et() ->
       ]
      ).
 
-
 %%--------------------------------------------------------------------
 %% @doc Run a  `Duration' seconds simulation for `Nphil' philosophers.
 %%
@@ -60,7 +58,6 @@ start(Nphil, Duration) ->
     init(Nphil),
     timer:sleep(1000*Duration),
     espace:stop().
-
 
 %%--------------------------------------------------------------------
 %% @doc Initialize the tuple space, and kick off the workers.
@@ -79,7 +76,6 @@ init(N) when N > 0 ->
     lists:foreach(fun (_I) -> espace:out({room_ticket}) end, Room_tickets),
 
     espace:out({num, N}).
-
 
 %%--------------------------------------------------------------------
 %% @doc Single philosopher process.
@@ -147,7 +143,6 @@ phil(I) ->
 
     phil(I).
 
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -169,3 +164,5 @@ think() ->
 -spec eat() -> ok.
 eat() ->
     timer:sleep(1000).
+
+%%--------------------------------------------------------------------

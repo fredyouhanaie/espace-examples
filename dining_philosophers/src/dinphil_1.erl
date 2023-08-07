@@ -36,7 +36,6 @@
 % default thinking or eating time, in seconds.
 -define(Delay, 2).
 
-
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -59,7 +58,6 @@ init(N) when N > 0 ->
 
     espace:out({eventnum, 0}),
     espace:out({num, N}).
-
 
 %%--------------------------------------------------------------------
 %% @doc Single philosopher process.
@@ -95,7 +93,6 @@ phil(I) ->
 
     phil(I).
 
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -109,7 +106,6 @@ phil(I) ->
 think() ->
     timer:sleep(1000*?Delay).
 
-
 %%--------------------------------------------------------------------
 %% @doc simulate eating as a one second delay.
 %%
@@ -119,7 +115,6 @@ think() ->
 eat() ->
     timer:sleep(1000*?Delay).
 
-
 %%--------------------------------------------------------------------
 %% @doc Record a philosopher event.
 %%
@@ -127,8 +122,10 @@ eat() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
-
+-spec phil_event(integer(), atom()) -> done.
 phil_event(Phil, Event) ->
     {[Event_num], _} = espace:in({eventnum, '$1'}),
     espace:out({event, Event_num+1, Phil, Event}),
     espace:out({eventnum, Event_num+1}).
+
+%%--------------------------------------------------------------------
