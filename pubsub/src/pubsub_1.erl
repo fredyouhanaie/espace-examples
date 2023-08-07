@@ -59,7 +59,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(atom(), atom()) -> ok | {error, channel_exists}.
+-spec start(atom(), atom()) -> done | {error, channel_exists}.
 start(Tspace, Channel) ->
     espace:out(Tspace, {pubsub, Channel, seq, 0}).
 
@@ -116,7 +116,7 @@ remove_data(Tspace, Channel) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec publish(atom(), atom(), term()) -> ok.
+-spec publish(atom(), atom(), term()) -> done.
 publish(Tspace, Channel, Data) ->
     {[Seq], _} = espace:in(Tspace, {pubsub, Channel, seq, '$1'}),
     espace:out(Tspace, {pubsub, Channel, data, Seq+1, Data}),
@@ -217,7 +217,7 @@ demo(Names) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec client(term()) -> ok.
+-spec client(term()) -> pid().
 client(Name) ->
     espace:worker(?TS, {?MODULE, client_init, [Name]}).
 

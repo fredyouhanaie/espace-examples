@@ -43,7 +43,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start() -> ok.
+-spec start() -> done.
 start() ->
     espace:out({pubsub, seq, 0}).
 
@@ -66,7 +66,7 @@ stop() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec publish(term()) -> ok.
+-spec publish(term()) -> done.
 publish(Data) ->
     {[Seq], _} = espace:in({pubsub, seq, '$1'}),
     espace:out({pubsub, data, Seq+1, Data}),

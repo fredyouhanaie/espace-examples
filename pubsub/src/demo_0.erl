@@ -120,7 +120,7 @@ demo_1(Names) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec client(atom()) -> ok.
+-spec client(atom()) -> pid().
 client(Name) ->
     espace:worker({?MODULE, client_init, [Name]}).
 
