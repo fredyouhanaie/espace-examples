@@ -56,7 +56,7 @@ sync(Tag, My_proc, N_procs) ->
 %%--------------------------------------------------------------------
 -spec reset(term()) -> ok.
 reset(Tag) ->
-    case espace:inp({Tag, '_', '_'}) of
+    case espace:inp({Tag, '_', ready}) of
         nomatch ->
             ok;
         _ ->
