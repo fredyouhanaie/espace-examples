@@ -42,8 +42,10 @@ stop() ->
 -spec sync(term(), integer(), integer()) -> ok.
 sync(Tag, My_proc, N_procs) ->
     espace:out({Tag, My_proc, ready}),
+    ?LOG_NOTICE("sync: Proc ~p ready.", [My_proc]),
+    %% block until all have declared READY
     [ espace:rd({Tag, I, ready}) || I <- lists:seq(0, N_procs-1)--[My_proc] ],
-    espace:in({Tag, My_proc, ready}),
+    ?LOG_NOTICE("sync: Proc ~p DONE.", [My_proc]),
     ok.
 
 %%--------------------------------------------------------------------
@@ -76,7 +78,7 @@ reset(Tag) ->
 %%--------------------------------------------------------------------
 -spec run_N(term(), integer()) -> ok.
 run_N(Tag, N_procs) ->
-    reset(Tag),
+    reset(Tag), %% ensure we're starting with a clean tuple space
     %% kick off the processes
     [ espace:eval({done, I, {fun run_1/3, [Tag, I, N_procs]} })
       || I <- lists:seq(0, N_procs-1) ],
@@ -93,9 +95,9 @@ run_N(Tag, N_procs) ->
 %%--------------------------------------------------------------------
 -spec run_1(term(), integer(), integer()) -> ok.
 run_1(Tag, Proc_N, N_procs) ->
-    ?LOG_NOTICE("Proc ~p started, pre-sync.", [Proc_N]),
+    ?LOG_NOTICE("run1: Proc ~p started, pre-sync.", [Proc_N]),
     sync(Tag, Proc_N, N_procs),
-    ?LOG_NOTICE("Proc ~p post-sync, stopped", [Proc_N]),
+    ?LOG_NOTICE("run_1: Proc ~p post-sync, stopped", [Proc_N]),
     ok.
 
 %%--------------------------------------------------------------------
