@@ -17,7 +17,8 @@
 %%%-------------------------------------------------------------------
 -module(primes_1).
 
--export([start/0, start/1]).
+-export([start/0, start/1, stop/0]).
+-export([get_primes/1]).
 
 %%--------------------------------------------------------------------
 
@@ -34,10 +35,18 @@ start() ->
 %%
 start(Limit) ->
     espace:start(),
+    get_primes(Limit).
+
+%%--------------------------------------------------------------------
+%% stop and clean up
+stop() ->
+    espace:stop().
+
+%%--------------------------------------------------------------------
+%%
+get_primes(Limit) ->
     do_evals(Limit),
-    Primes = collect_primes(Limit),
-    espace:stop(),
-    Primes.
+    collect_primes(Limit).
 
 %%--------------------------------------------------------------------
 %% Kick off all the `eval' processes in the background.
