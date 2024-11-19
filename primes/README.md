@@ -14,9 +14,9 @@ _C-Linda_ based examples in Erlang and _espace_.
 
 The first example in the book is a very simplistic and fairly
 inefficient way of computing a list of primes. It demonstrates use of
-C-Linda for performing parallel tasks.
+_C-Linda_ for performing parallel tasks.
 
-## Build
+## Build and test
 
 ```console
 $ rebar3 dialyzer
@@ -48,3 +48,23 @@ type: temporary
  {20,false}]
 
 ```
+
+Or, for manual experiments
+
+```console
+1> espace:start().
+ok
+2> primes_1:get_primes(10).
+[{2,true},
+ {3,true},
+ {4,false},
+ {5,true},
+ {6,false},
+ {7,true},
+ {8,false},
+ {9,false},
+ {10,false}]
+3>
+```
+
+---
